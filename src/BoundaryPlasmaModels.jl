@@ -1,5 +1,5 @@
 module BoundaryPlasmaModels
 
-# Write your package code here.
+include("0D_GASC/gasc_0D.jl")
 
 end
