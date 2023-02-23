@@ -7,7 +7,11 @@ compute_q⋆(R::T,κ::T,Ip::T,ϵ::T,Bt::T) where {T<:Real} = pi*(ϵ*R)^2. * (1. 
 compute_ℒ_omp_target(R::T,κ::T,Ip::T,ϵ::T,Bt::T) where {T<:Real} = 4.33 * compute_q⋆(R,κ,Ip,ϵ,Bt) * R
 compute_A⟂(R::T,ϵ::T,λ_q::T, Bpol::T, Bt::T) where {T<:Real} = 2.*pi*R*(1.+epsilon)*λ_q *sin(arctan(Bpol/Bt))
 compute_q_∥∥_omp(P_SOL::T, R::T,ϵ::T,λ_q::T, Bpol::T, Bt::T) = P_SOL*1.e6/compute_A⟂(R,ϵ,λ_q, Bpol, Bt)
-
+compute_κ₀(Zeff:T) where {T<:Real} = 2390. * Zeff^(-0.3) #mks units with T in eV (Stacey Fusion Plasma Physics pg. 379)  - Using 14. for ln(gamma)
+compute_q_rad_ADAS(n_up::T, T_up::T, imp::GASC0DHeatFluxSOLImpurityParameters) where {T<:Real} =    n_up * T_up *  sqrt(2. * compute_κ₀(imp.Zeff) *(imp.fzHe*Lint_ADAS(0.,T_up,0.5,1.0,imp.ZHe)+
+                                       imp.fz1Sol*Lint_ADAS(0.,T_up,0.5,1.0,imp.Zimp1)+
+                                       imp.fz2Sol*Lint_ADAS(0.,T_up,0.5,1.0,imp.Zimp2) ))
+#eV 
 function λq_sieglin(R,P_SOL,Bpol,ϵ,νₑ)
     """Eich scaling(NF 53 093031) & B. Sieglin PPCF 55 (2013) 124039"""
     # Eich scaling(NF 53 093031)
@@ -189,55 +193,42 @@ def broyfunc (x, *args):
     return ([f1,f2,f3])
 
         
-struct GASC0DHeatFluxParameters
-    P_SOL :: Float64 # power into SOL [MW]
-    R :: Float64 # major radius [m]
-    Ip         # plasma current [MA]
-    κ      # elongation
-    ϵ    # inverse aspect ratio
-    Bt   # toroidal field to use for flux area [T]
-    Bpol  # poloidal field to use for flux area [T]
-    Ndiv       # number of divertors
+struct GASC0DHeatFluxPlasmaParameters{{T<:Real}}
+    P_SOL :: T # power into SOL [MW]
+    R :: T # major radius [m]
+    Ip :: T        # plasma current [MA]
+    κ :: T     # elongation
+    ϵ :: T   # inverse aspect ratio
+    Bt:: T   # toroidal field to use for flux area [T]
+    Bpol:: T  # poloidal field to use for flux area [T]
 end
 
-kappa,      # elongation
 
+struct GASC0DHeatFluxSOLParameters{T<:Real}
+    Ndiv::Int64  # number of divertors
+    n_up :: T         # upstream density []
+    λ⟂ :: T # heat flux width to use for flux area [m]
+    
 end
-def qparallel_divertor(
-    Psol,       
-    lambda_int, # heat flux width to use for flux area [m]
-    nu,         # upstream density []
-    fzHe,       # Helium concentration in divertor
-    ZHe,        # Helium atomic number
-    fz1Sol,     # impurity 1 concentration in divertor
-    Zimp1,      # impurity 1 atomic number
-    fz2Sol,     # impurity 2 concentration in divertor
-    Zimp2,      # impurity 2 atomic number
-    Zeff, # effective Z in divertor
-    ):
 
-    '''
-    Follows the two-point model (Kallenbach PPCF 55 (2013) 124041) to calculate the
-    heat flux at the divertor target with impurity radiation.
+struct GASC0DHeatFluxSOLImpurityParameters{T<:Real}
+    fzHe :: T       # Helium concentration in divertor
+    ZHe :: T        # Helium atomic number
+    fz1Sol :: T     # impurity 1 concentration in divertor
+    Zimp1 :: T      # impurity 1 atomic number
+    fz2Sol:: T      # impurity 2 concentration in divertor
+    Zimp2 :: T      # impurity 2 atomic number
+    Zeff :: T       # effective Z in divertor
+end
 
-    Psol,       # power into SOL [MW]
-    R,          # major radius [m]
-    Bt,         # toroidal field to use for flux area [T]
-    Bpol,       # poloidal field to use for flux area [T]
-    lambda_int, # heat flux width to use for flux area [m]
-    Ip,         # plasma current [MA]
-    epsilon,    # inverse aspect ratio
-    kappa,      # elongation
-    Ndiv,       # number of divertors
-    nu,         # upstream density []
-    fzHe,       # Helium concentration in divertor
-    ZHe,        # Helium atomic number
-    fz1Sol,     # impurity 1 concentration in divertor
-    Zimp1,      # impurity 1 atomic number
-    fz2Sol,     # impurity 2 concentration in divertor
-    Zimp2,      # impurity 2 atomic number
-    effectiveZ, # effective Z in divertor
-    '''
+struct GASC0DHeatFluxParameters{T<:Real}
+    plasma :: GASC0DHeatFluxPlasmaParameters{T}
+    sol :: GASC0DHeatFluxSOLParameters{T<:Real}
+    imp :: GASC0DHeatFluxSOLImpurityParameters{T}
+end
+
+def qparallel_divertor():
+
 
     #_lambdaq = 1.35 * (Psol)**(-0.02)*R**0.04*Bpol**(-0.92)*epsilon**0.42 *1.e-3
 
@@ -252,17 +243,15 @@ def qparallel_divertor(
 
     # Calculate upstream temperature 
     ℒ_∥∥ = compute_ℒ_omp_target(R,κ,Ip,ϵ,Bt)
-    q_∥∥ = compute_q_∥∥_omp(R,ϵ,λ_q, Bpol, Bt)
-    κ₀ = 2390.* Z_eff^(-0.3) 
-    compute_Tu( q_∥∥, ℒ_∥∥,κ₀) = (7.*q_∥∥*ℒ_∥∥/(2.*κ₀))^(2./7.) 
+    q_∥∥_omp = compute_q_∥∥_omp(R,ϵ,λ_q, Bpol, Bt)
+    
+    compute_Tu( q_∥∥::T, ℒ_∥∥::T,κ₀::T) = (7.*q_∥∥*ℒ_∥∥/(2.*κ₀))^(2./7.) 
 
     # Integrate to get power radiated along flux tube (Kallenbach Eqn. 5) 
     # Lint_ADAS(Tmin,Tmax,Texp,Lexp,Zimp) performs the weighted cooling rate integral over the specified
     # temperature interval. 
-    q_rad =  nu*Tu*np.sqrt(2.*kappa_0*(fzHe*Lint_ADAS(0.,Tu,0.5,1.0,ZHe)+
-                                       fz1Sol*Lint_ADAS(0.,Tu,0.5,1.0,Zimp1)+
-                                       fz2Sol*Lint_ADAS(0.,Tu,0.5,1.0,Zimp2) ))
-
+    
+    q_rad = compute_q_rad_ADAS(n_up, T_up, imp) 
     #Tgrid = np.arange(101)*Tu/101.
 
     #Lz1 = Lint(0.,Tu,0.5,1.0,Zimp1)/Lint(0.,Tu,0.5,0.0,Zimp1)
@@ -272,43 +261,43 @@ def qparallel_divertor(
 
     #q_rad2 =  np.sqrt(2.*kappa_0*effectiveZ**(-0.3)*(nu*Tu)**2.*(fz1Sol*Lint(0.,Tu,0.5,1.0,Zimp1)+fz2Sol*Lint(0.,Tu,0.5,1.0,Zimp2) ))
 
-    q_target = np.sqrt(q_parallel**2. - q_rad**2.)   #Expected heat flux without geometric considerations
+    q_target = sqrt(q_∥∥_omp^2. - q_rad^2.)   #Expected heat flux without geometric considerations
 
     P_rad = q_rad * A_perp * Ndiv * 1.e-6
 
     return (q_parallel, q_rad, q_target, Tu, P_rad) #, lambda_int)
 
 
-    m_D = 1.67e-27
-    kappa_0 = 2390.  * effectiveZ**(-0.3)
-    eps_pot = 15.
-    eps_rad = 16.
-    gamma = 7.
+    # m_D = 1.67e-27
+    # kappa_0 = 2390.  * effectiveZ**(-0.3)
+    # eps_pot = 15.
+    # eps_rad = 16.
+    # gamma = 7.
 
-    args = [q_parallel,nu,fz1Sol,Zimp1,fz2Sol,Zimp2,L_parallel,m_D,eps_pot,eps_rad,gamma,kappa_0]
-    xguess = np.array([Tu,10.,nu])
-    solution = sc.root(broyfunc,np.sqrt(xguess),args=tuple(args),tol=1.e-6,method='lm')
-    if solution['success']:
-        Tu = solution['x'][0]**2.
-        Tt = solution['x'][1]**2
-        nt = solution['x'][2]**2.
-        q_target_old = q_target
-        q_target = nt * np.sqrt(2.*Tt*1.602e-19/m_D)*(gamma*Tt + eps_pot + eps_rad)*1.602e-19
-        #q_rad_old = q_rad
-        q_rad = np.sqrt(q_parallel**2 - q_target**2.)
-        P_rad = q_rad * A_perp * Ndiv * 1.e-6
+    # args = [q_parallel,nu,fz1Sol,Zimp1,fz2Sol,Zimp2,L_parallel,m_D,eps_pot,eps_rad,gamma,kappa_0]
+    # xguess = np.array([Tu,10.,nu])
+    # solution = sc.root(broyfunc,np.sqrt(xguess),args=tuple(args),tol=1.e-6,method='lm')
+    # if solution['success']:
+    #     Tu = solution['x'][0]**2.
+    #     Tt = solution['x'][1]**2
+    #     nt = solution['x'][2]**2.
+    #     q_target_old = q_target
+    #     q_target = nt * np.sqrt(2.*Tt*1.602e-19/m_D)*(gamma*Tt + eps_pot + eps_rad)*1.602e-19
+    #     #q_rad_old = q_rad
+    #     q_rad = np.sqrt(q_parallel**2 - q_target**2.)
+    #     P_rad = q_rad * A_perp * Ndiv * 1.e-6
 
-    f = model_equations(np.sqrt(xguess),*args)
+    # f = model_equations(np.sqrt(xguess),*args)
 
-    solution = sc.fsolve(model_equations,np.sqrt(xguess),args=tuple(args),xtol=1.e-6)
-    q_target = solution[1]
-    q_rad = np.sqrt(q_parallel**2.-q_target**2.)
-    Tu = solution[0]
+    # solution = sc.fsolve(model_equations,np.sqrt(xguess),args=tuple(args),xtol=1.e-6)
+    # q_target = solution[1]
+    # q_rad = np.sqrt(q_parallel**2.-q_target**2.)
+    # Tu = solution[0]
 
-    return (q_parallel, q_rad, q_target, Tu, P_rad, lambda_int)
+    # return (q_parallel, q_rad, q_target, Tu, P_rad, lambda_int)
 
 
-function compute fz_Reinke(P_SOL, R, Bt, Bpol, Ip, epsilon, κ , nu, Zimp):
+function compute_fz_Reinke(P_SOL, R, Bt, Bpol, Ip, ϵ, κ , n_up, Zimp):
 
     λ_q = 1.35 * P_SOL^(-0.02) *R ^0.04* Bpol^(-0.92) * ϵ^0.42 * 1.e-3
     q_∥∥ = P_SOL*1.e6 * sqrt(Bt^2.+Bpol^2.) / (2.*pi*R*λ_q*Bpol)
@@ -319,11 +308,10 @@ function compute fz_Reinke(P_SOL, R, Bt, Bpol, Ip, epsilon, κ , nu, Zimp):
 
     #q_parallel2 = 117.9*Psol*np.sqrt(Bt**2.+Bpol**2.)/ (R * epsilon**0.42)*1.e6
 
-    κ₀ = 1.3e69 * (1.602e-19)^3.5
-    #kappa_0 = 3.09e3 / Zimp /14.  #mks units with T in eV (Stacey Fusion Plasma Physics pg. 379)  - Using 14. for ln(gamma)
-      #eV
-    Tu = compute_Tu( q_∥∥, ℒ_∥∥,κ₀)    #eV
+    κ₀ = compute_κ₀(Zeff)
+    #kappa_0 = 3.09e3 / Zimp /14.  
+    T_up = compute_T_up( q_∥∥, ℒ_∥∥,κ₀)    #eV
 
-    fz = q_∥∥^2./(2.*κ₀*nu^2.*Tu^2.*Lint(0.,Tu,0.5,1.0,Zimp))
+    fz = q_∥∥^2./(2.*κ₀*n_up^2.*T_up^2.*Lint(0.,T_up,0.5,1.0,Zimp))
 
     return fz
