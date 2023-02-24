@@ -12,4 +12,4 @@ def Lint_ADAS(Tmin, Tmax,Texp,Lexp, Zimp; N = 100):
     dT = LinRange(Tmin,Tmax,N)
     Lz = np.interp(Te,adasdata[Zimp]['temp'],adasdata[Zimp]['Lztot'])
     return np.trapz((Te^Texp)*(Lz^Lexp),Te) *1.e-6
-    end
+end
