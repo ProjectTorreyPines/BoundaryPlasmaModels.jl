@@ -1,5 +1,11 @@
 module BoundaryPlasmaModels
+using DocStringExtensions
 
-include("0D_GASC/gasc_0D.jl")
+abstract type DivertorHeatFluxModel end 
+
+include("LengyelModel/LegyelHeatFluxModel.jl")
+include("parameters.jl")
+include("interface.jl")
+include("basic.jl")
 
 end
