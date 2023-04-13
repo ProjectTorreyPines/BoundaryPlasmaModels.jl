@@ -31,13 +31,14 @@ end
 Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    f_omp2target_expension :: Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
-    f_perp_projection :: Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
+    f_omp2target_expension :: Entry{T} = Entry(T, "m", "flux expension and projection of λ_omp onto the target"; default=1.0)
+    f_perp_projection :: Entry{T} = Entry(T, "m", "radial projection factor"; default=1.0)
     f_pol_projection :: Entry{T} = Entry(T, "m", "poloidal projection factor"; default=1.0)
     α_sp :: Entry{T} = Entry(T, "deg", "Pitch angle at the outer strike point"; default=3.0)
     θ_sp :: Entry{T} = Entry(T, "deg", "Poloidal angle of the target at the outer strike point"; default=90.0)
     f_spread_pfr :: Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
     λ_target ::Entry{T} = Entry(T, "m", "heat flux width at the target"; default=0.000)
+    location::Switch{Symbol} = Switch(Symbol, [:outer_upper,:outer_lower], "-", "location of the target"; default=:outer_upper)
 end
 
 

@@ -11,12 +11,12 @@ Base.@kwdef mutable struct DivertorHeatFluxModelParameters{T} <: AbstractParamet
 end
 
 
-abstract type FUSEparameters__ActorDivertorHeatFluxTarget{T} <: AbstractParameters end
-Base.@kwdef mutable struct DivertorHeatFluxParameters{T<:Real} <: FUSEparameters__ActorDivertorHeatFluxTarget{T}
+abstract type FUSEparameters__ActorDivertorHeatFlux{T} <: AbstractParameters end
+Base.@kwdef mutable struct DivertorHeatFluxParameters{T<:Real} <: FUSEparameters__ActorDivertorHeatFlux{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set 
     model:: Switch{Symbol} = Switch(Symbol, [:lengyel], "-", ""; default=:lengyel)
     setup :: DivertorHeatFluxModelParameters{T} = DivertorHeatFluxModelParameters{T}()
 end
 
-FUSEparameters__ActorDivertorHeatFluxTarget{T}(args...; kw...) where {T<:Real} = DivertorHeatFluxParameters{T}(args...; kw...)
+FUSEparameters__ActorDivertorHeatFlux{T}(args...; kw...) where {T<:Real} = DivertorHeatFluxParameters{T}(args...; kw...)

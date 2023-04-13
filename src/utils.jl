@@ -29,23 +29,9 @@ get_R0(eqt::IMAS.equilibrium__time_slice) = eqt.global_quantities.magnetic_axis.
 
 get_PSOL(dd::IMAS.dd) = get_PSOL(dd.equilibrium.time_slice[], dd.core_profiles.profiles_1d[], dd.core_sources)
 
-get_Bpol_omp(dd::IMAS.dd) =   get_Bpol_omp(dd.equilibrium.time_slice[])
 
-function get_Bpol_omp(eqt::IMAS.equilibrium__time_slice)
-    x_omp = FusionGeometryTools.get_x_omp(eqt)
-    cc = IMAS.cocos(11)
-    r, z, PSI_interpolant = IMAS.ψ_interpolant(eqt)
-    Bp = IMAS.Bp_vector_interpolant(PSI_interpolant, cc, [x_omp.r], [x_omp.z] )
-    return Bp[1]
-end
 
-function get_Bt(eq::IMAS.equilibrium, r::Union{Float64, Vector})
-    r0 = eq.vacuum_toroidal_field.r0
-    b0 = @ddtime(eq.vacuum_toroidal_field.b0)
-    return abs.(b0 .* r0 ./ r)
-end
-get_Bt_omp(dd::IMAS.dd) = get_Bt_omp(dd.equilibrium)
-get_Bt_omp(eq::IMAS.equilibrium) = get_Bt(eq,FusionGeometryTools.get_x_omp(eq.time_slice[]).r)
+
 
 function get_PSOL(eqt::IMAS.equilibrium__time_slice, cp1d::IMAS.core_profiles__profiles_1d, core_sources::IMAS.core_sources)
     tot_src = IMAS.total_sources(core_sources, cp1d)
@@ -59,7 +45,7 @@ get_omp_Te(dd::IMAS.dd) = IMAS.interp1d(dd.core_profiles.profiles_1d[].grid.rho_
 
 function get_target_outline(dd::IMAS.dd, location)
     target = get_target(dd,location)
-    @assert target !== nothing
+    @assert target !== nothing "cannot find a target at location: $location "
     return FusionGeometryTools.RZLine(target.outline.r,target.outline.z) 
 end
 
@@ -76,14 +62,30 @@ function get_target(dd::IMAS.dd, location)
     nothing
 end
 FusionGeometryTools.RZPoint(sp::IMASDD.equilibrium__time_slice___boundary_separatrix__strike_point) = FusionGeometryTools.RZPoint(sp.r,sp.z,get_id(sp))
-function get_sp(dd::IMAS.dd, location)
-
+function get_sp(dd::IMAS.dd, location::Vector{Symbol})
+    sp = []
         for t in dd.equilibrium.time_slice[].boundary_separatrix.strike_point
             if all([l ∈ get_id(t) for l in location])
-                return FusionGeometryTools.RZPoint(t)
+                push!(sp,FusionGeometryTools.RZPoint(t))
             end
         end
-    nothing
+        if length(sp) ==  0 
+            error("could not find a strike point in dd with location: $location")
+        elseif length(sp) > 1
+            error("multiple strike points found in dd with location: $location \n sp: $sp ")
+        else
+            return sp[1]
+        end
+end
+
+function get_α_sp(dd :: IMAS.dd, location::Vector{Symbol}) 
+    sp = get_sp(dd, location)
+    return FusionGeometryTools.get_α(sp,dd.equilibrium) 
+end
+
+function get_θ_sp(dd ::IMAS.dd, location::Vector{Symbol}) 
+    target = get_target(dd::IMAS.dd, location)
+    return target.angle_sp
 end
 
 function get_projected_λ_omp_target(λ_omp::Float64,dd::IMAS.dd; location=[:outer,:upper])
@@ -92,6 +94,10 @@ function get_projected_λ_omp_target(λ_omp::Float64,dd::IMAS.dd; location=[:out
     p = FusionGeometryTools.get_omp_projection_target(λ_omp,target_outline,dd.equilibrium.time_slice[])
     @assert sp !==nothing
     FusionGeometryTools.curvilinear_distance(target_outline,sp,p)
+end
+
+function get_projected_flux_expension(λ_omp::Float64,dd::IMAS.dd; location=[:outer,:upper])
+    return get_projected_λ_omp_target(λ_omp,dd; location)/λ_omp
 end
 
 
