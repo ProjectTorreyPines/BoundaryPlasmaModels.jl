@@ -10,6 +10,6 @@ end
 
    """Eich scaling (NF 53 093031)"""
 λq_eich(R::T,P_SOL::T,Bpol::T,ϵ::T) where T<:Real = 1.35e-3 * P_SOL^(-0.02)* R^0.04 * Bpol^(-0.92) * ϵ^(0.42) # Eich scaling (NF 53 093031)
-λq_eich(plasma) = λq_eich(plasma.R_omp,plasma.P_SOL,plasma.Bpol,plasma.ϵ)
+λq_eich(plasma::LengyelModelPlasmaParameters) = λq_eich(plasma.R_omp,plasma.P_SOL,plasma.Bpol_omp,plasma.ϵ)
 
 λq_loarte(P_SOL::T,B0::T,q95iter::T) where T<:Real = 0.00265 * P_SOL^0.38 * B0^(-0.71) * q95iter ^ 0.3

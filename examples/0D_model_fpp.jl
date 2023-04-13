@@ -22,11 +22,14 @@ pfs_logger  = TransformerLogger(global_logger()) do log
 end
 
 global_logger(pfs_logger)
-
+using FUSE
+using BoundaryPlasmaModels
  ini, act = FUSE.case_parameters(:FPP; version=:v1_demount, init_from=:scalars);
- ini, act = FUSE.case_parameters(:ITER; init_from=:scalars);
+
  dd = IMAS.dd()#
  FUSE.init(dd, ini, act; do_plot=true);
+
+ dhf = BoundaryPlasmaModels.DivertorHeatFlux(dd);
 # FUSE.IMAS.imas2json(dd,"FPP.json")
 # FUSE.act2json(act,"FPP.json")
 # #dd = IMAS.json2imas("PlasmaFacingSurfaces/examples/highbetap_fpp_STEP_case_with_FUSE_xpoints.json");

@@ -3,32 +3,33 @@
 
 
 import IMASDD
-mutable struct DivertorHeatFlux
-    dd :: Union{Nothing,IMASDD.dd}
-    model :: DivertorHeatFluxModel
+mutable struct DivertorHeatFlux{D<:Union{Nothing,IMASDD.dd}, M<: DivertorHeatFluxModel}
+    dd :: D
+    model :: M
 end
-
-DivertorHeatFluxModel(dd::IMASDD.dd; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)
-DivertorHeatFluxModel(; model::Symbol=:lengyel) = DivertorHeatFlux(nothing, model)
-
-DivertorHeatFlux(dd::IMASDD.dd, model::Symbol=:lengyel) = DivertorHeatFlux(dd, DivertorHeatFluxModel(model))
-
+DivertorHeatFlux(; model::Symbol=:lengyel) = DivertorHeatFlux(nothing, model)
+DivertorHeatFlux(dd::Union{Nothing,IMASDD.dd}; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)
+DivertorHeatFlux(dd::Union{Nothing,IMASDD.dd}, model::Symbol) = DivertorHeatFlux(dd, DivertorHeatFluxModel(model))
 
 function DivertorHeatFluxModel(model::Symbol)
     if model == :lengyel 
-        return  LengyelHeatFluxModel.LengyelModel()
+        return  LengyelModel()
+    else
+        error()
+    end 
+end
+function DivertorHeatFluxModel(model::Symbol,setup)
+    if model == :lengyel 
+        return  LengyelModel(setup.lengyel)
     else
         error()
     end 
 end
 
 function DivertorHeatFlux(dd::IMASDD.dd,par::DivertorHeatFluxParameters) 
-    # dhf DivertorHeatFlux(dd,par.model)
-    dhf.model(par.setup)
-    return dhf
+    return DivertorHeatFlux(dd,par.model,par.setup)
 end
-
-setup_model(dhf::DivertorHeatFlux, setup) = setup_model(dhf.model,dhf.dd,setup)
+setup_model(dhf::DivertorHeatFlux) = setup_model(dhf.model,dhf.dd)
 
 
 
