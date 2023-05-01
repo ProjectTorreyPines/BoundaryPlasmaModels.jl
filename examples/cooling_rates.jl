@@ -1,4 +1,4 @@
-def Lint_ADAS(Tmin, Tmax,Texp,Lexp, Zimp; N = 100):
+function Lint_ADAS(Tmin, Tmax,Texp,Lexp, Zimp; N = 100)
 # Perform weighted cooling rate integral over specified temperature interval
 # Inputs:  Tmin   minimum temperature for integral (eV)
 #          Tmax   maximum temperature for integral (eV)

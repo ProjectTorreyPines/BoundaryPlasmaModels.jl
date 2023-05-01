@@ -2,7 +2,7 @@ import Term: install_term_stacktrace, hLine
 
 install_term_stacktrace()
 install_term_logger()
-print(hLine("Fancy Errors"; style = "bold blue"))
+print(hLine("Fancy Errors"; style="bold blue"))
 
 """
 Done!

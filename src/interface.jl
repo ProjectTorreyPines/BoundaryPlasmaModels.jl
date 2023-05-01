@@ -1,34 +1,29 @@
-
-
-
-
-import IMASDD
-# mutable struct DivertorHeatFlux{D<:Union{Nothing,IMASDD.dd}, M<: DivertorHeatFluxModel}
+# mutable struct DivertorHeatFlux{D<:Union{Nothing,IMAS.dd}, M<: DivertorHeatFluxModel}
 #     model :: M
 # end
 DivertorHeatFlux(; model::Symbol=:lengyel) = DivertorHeatFlux(nothing, model)
-DivertorHeatFlux(dd::Union{Nothing,IMASDD.dd}; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)
-DivertorHeatFlux(dd::Union{Nothing,IMASDD.dd}, model::Symbol) = DivertorHeatFlux(dd, DivertorHeatFluxModel(model))
+
+DivertorHeatFlux(dd::Union{Nothing,IMAS.dd}; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)
+
+DivertorHeatFlux(dd::Union{Nothing,IMAS.dd}, model::Symbol) = DivertorHeatFlux(dd, DivertorHeatFluxModel(model))
 
 function DivertorHeatFluxModel(model::Symbol)
-    if model == :lengyel 
-        return  LengyelModel()
+    if model == :lengyel
+        return LengyelModel()
     else
         error()
-    end 
+    end
 end
 
-function DivertorHeatFluxModel(model::Symbol,setup::DivertorHeatFluxModelParameters)
-    if model == :lengyel 
-        return  LengyelModel(setup.lengyel)
+function DivertorHeatFluxModel(model::Symbol, setup::DivertorHeatFluxModelParameters)
+    if model == :lengyel
+        return LengyelModel(setup.lengyel)
     else
         error()
-    end 
+    end
 end
 
-DivertorHeatFluxModel(par::DivertorHeatFluxParameters) = DivertorHeatFluxModel(par.model,par.setup)
-
-
+DivertorHeatFluxModel(par::DivertorHeatFluxParameters) = DivertorHeatFluxModel(par.model, par.setup)
 
 function export2dd(dd::IMAS.dd, model::DivertorHeatFluxModel; kw...)
 end
