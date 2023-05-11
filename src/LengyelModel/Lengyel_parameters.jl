@@ -3,52 +3,46 @@ using SimulationParameters: AbstractParameters, Entry, Switch
 Base.@kwdef mutable struct LengyelModelPlasmaParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    method::Switch{Symbol} = Switch(Symbol, [:dd, :manual, :dict], "-", "Method to define the baffle design point"; default=:manual)
-    P_SOL::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    R_omp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    Ip::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    κ::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    ϵ::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    Bt_omp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    Bpol_omp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
+    P_SOL::Entry{T} = Entry(T, "W", "Power coming through the separatrix")
+    R_omp::Entry{T} = Entry(T, "m", "Outer midplane radius")
+    Ip::Entry{T} = Entry(T, "A", "Plasma current")
+    κ::Entry{T} = Entry(T, "-", "Elongation")
+    ϵ::Entry{T} = Entry(T, "-", "Plasma aspect ratio")
+    Bt_omp::Entry{T} = Entry(T, "T", "Toroidal magnetic field at the outer midplane")
+    Bpol_omp::Entry{T} = Entry(T, "T", "Poloidal magnetic field at the outer midplane")
 end
 
 Base.@kwdef mutable struct LengyelModelSOLParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    method::Switch{Symbol} = Switch(Symbol, [:dd, :manual, :dict], "-", "Method to define the baffle design point"; default=:manual)
-    λ_omp_scaling::Switch{Union{Symbol,Float64}} = Switch(Union{Symbol,Float64}, [:eich, :none], "-", "Method to define the baffle design point"; default=:eich)
-    n_up::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    T_up::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    λ_omp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.003)
-    f_imp::Entry{Vector{Float64}} = Entry(Vector{Float64}, "m", "Buffer between plasma and wall"; default=Vector{Float64}())
-    imp::Entry{Vector{Symbol}} = Entry(Vector{Symbol}, "m", "Buffer between plasma and wall"; default=Vector{Symbol}())
-    tau_imp::Entry{Vector{Float64}} = Entry(Vector{Float64}, "m", "Buffer between plasma and wall"; default=Vector{Float64}())
-    f_adhoc::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
+    n_up::Entry{T} = Entry(T, "m⁻³", "Upstream density")
+    T_up::Entry{T} = Entry(T, "eV", "Upstream temperature")
+    λ_omp::Entry{T} = Entry(T, "m", "Heat flux decay length")
+    f_imp::Entry{Vector{Float64}} = Entry(Vector{Float64}, "-", "Vector of impurity fractions")
+    imp::Entry{Vector{Symbol}} = Entry(Vector{Symbol}, "-", "Vector of impurity species")
+    f_adhoc::Entry{T} = Entry(T, "-", "Radiation enhancement factor"; default=1.0)
 end
 
 Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    f_omp2target_expension::Entry{T} = Entry(T, "m", "flux expension and projection of λ_omp onto the target"; default=1.0)
-    f_perp_projection::Entry{T} = Entry(T, "m", "radial projection factor"; default=1.0)
-    f_pol_projection::Entry{T} = Entry(T, "m", "poloidal projection factor"; default=1.0)
-    α_sp::Entry{T} = Entry(T, "deg", "Pitch angle at the outer strike point"; default=3.0)
-    θ_sp::Entry{T} = Entry(T, "deg", "Poloidal angle of the target at the outer strike point"; default=90.0)
-    f_spread_pfr::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
-    λ_target::Entry{T} = Entry(T, "m", "Heat flux width at the target"; default=0.000)
-    location::Switch{Symbol} = Switch(Symbol, [:outer_upper, :outer_lower], "-", "location of the target"; default=:outer_upper)
+    f_omp2target_expansion::Entry{T} = Entry(T, "-", "Flux expansion and projection of λ_omp onto the target")
+    f_perp_projection::Entry{T} = Entry(T, "-", "Radial projection factor") # can be calculated internally from θ_sp
+    f_pol_projection::Entry{T} = Entry(T, "-", "Poloidal projection factor") # can be calculated internally from α_sp
+    α_sp::Entry{T} = Entry(T, "rad", "Pitch angle at the outer strike point")
+    θ_sp::Entry{T} = Entry(T, "rad", "Poloidal angle of the target at the outer strike point")
+    f_spread_pfr::Entry{T} = Entry(T, "-", "????")
+    λ_target::Entry{T} = Entry(T, "m", "Heat flux decay length at the target")
 end
 
 Base.@kwdef mutable struct LengyelIntegralParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    method::Switch{Symbol} = Switch(Symbol, [:auto, :manual], "-", "Method to define the baffle design point"; default=:manual)
-    T_down::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.0)
-    Zeff_exp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=-0.3)
-    Texp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=0.5)
-    Lexp::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=1.0)
-    κ0::Entry{T} = Entry(T, "m", "Buffer between plasma and wall"; default=2390.0)
+    T_down::Entry{T} = Entry(T, "-", "???")
+    Zeff_exp::Entry{T} = Entry(T, "-", "???")
+    Texp::Entry{T} = Entry(T, "-", "???")
+    Lexp::Entry{T} = Entry(T, "-", "???")
+    κ0::Entry{T} = Entry(T, "-", "???")
 end
 
 Base.@kwdef mutable struct LengyelModelParameters{T} <: AbstractParameters where {T<:Real}

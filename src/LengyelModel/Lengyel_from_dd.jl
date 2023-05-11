@@ -1,52 +1,36 @@
-function setup_model(model::LengyelModel, dd::IMAS.dd)
-    set_heatfluxmodel_plasma_parameters_from_dd(model, dd)
-    set_heatfluxmodel_sol_parameters_from_dd(model, dd)
-    set_λ_omp_from_dd(model, dd)
-    set_heatfluxmodel_target_parameters_from_dd(model, dd)
-end
+function setup_model(boundary_plasma_model::LengyelModel, dd::IMAS.dd)
+    eqt = dd.equilibrium.time_slice[]
+    cp1d = dd.core_profiles.profiles_1d[]
 
-function set_heatfluxmodel_plasma_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    d = Dict(
-        :P_SOL => get_PSOL(dd),
-        :R_omp => FusionGeometryTools.get_R_omp(dd),
-        :Ip => get_Ip(dd),
-        :κ => get_κ(dd),
-        :ϵ => get_ϵ(dd),
-        :Bt_omp => FusionGeometryTools.get_Bt_omp(dd),
-        :Bpol_omp => FusionGeometryTools.get_Bpol_omp(dd)
-    )
-    for (k, v) in d
-        setproperty!(model.parameters.plasma, k, v)
-    end
-end
+    hfs_sol2, lfs_sol2 = IMAS.sol(eqt, dd.wall, levels=2)
+    sol = lfs_sol2[1]
 
-function set_heatfluxmodel_sol_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    d = Dict(
-        :n_up => get_omp_density(dd),
-        :T_up => get_omp_Te(dd)
-    )
-    p = model.parameters.sol
-    for (k, v) in d
-        setproperty!(p, k, v)
-    end
-end
+    boundary_plasma_model.parameters.plasma.P_SOL = IMAS.power_sol(dd.core_sources, cp1d)
+    boundary_plasma_model.parameters.plasma.R_omp = sol.r[sol.midplane_index]
+    boundary_plasma_model.parameters.plasma.Ip = eqt.global_quantities.ip
+    boundary_plasma_model.parameters.plasma.κ = eqt.boundary.elongation
+    boundary_plasma_model.parameters.plasma.ϵ = eqt.boundary.minor_radius / eqt.boundary.geometric_axis.r
+    boundary_plasma_model.parameters.plasma.Bt_omp = sol.Bt[sol.midplane_index]
+    boundary_plasma_model.parameters.plasma.Bpol_omp = sol.Bp[sol.midplane_index]
 
-function set_heatfluxmodel_target_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    loc = Symbol.(split(string(model.parameters.target.location), "_"))
-    d = Dict(
-        :λ_target => get_projected_λ_omp_target(model.parameters.sol.λ_omp, dd; location=loc),
-        :f_omp2target_expension => get_projected_λ_omp_target(model.parameters.sol.λ_omp, dd; location=loc) / model.parameters.sol.λ_omp,
-        :α_sp => get_α_sp(dd, loc) * 180 / pi,
-        :f_pol_projection => tan(get_α_sp(dd, loc)),
-        :θ_sp => get_θ_sp(dd, loc) * 180 / pi,
-        :f_perp_projection => 1 / cos(get_θ_sp(dd, loc))
-    )
-    p = model.parameters.target
-    for (k, v) in d
-        setproperty!(p, k, v)
-    end
-end
+    boundary_plasma_model.parameters.sol.n_up = cp1d.electrons.density_thermal[end]
+    boundary_plasma_model.parameters.sol.T_up = cp1d.electrons.temperature[end]
 
-function set_λ_omp_from_dd(model, dd)
-    model.parameters.sol.λ_omp = IMAS.widthSOL_eich(dd)
+    boundary_plasma_model.parameters.sol.λ_omp = IMAS.widthSOL_eich(eqt, cp1d, dd.core_sources)
+    boundary_plasma_model.parameters.sol.f_imp = [0.02]
+    boundary_plasma_model.parameters.sol.imp = [:Ne]
+
+    boundary_plasma_model.parameters.target.f_omp2target_expansion = (lfs_sol2[2].r[lfs_sol2[2].midplane_index] - lfs_sol2[1].r[lfs_sol2[1].midplane_index]) / sqrt((lfs_sol2[2].r[end] - lfs_sol2[1].r[end])^2 + (lfs_sol2[2].z[end] - lfs_sol2[1].z[end])^2)
+    boundary_plasma_model.parameters.target.λ_target = boundary_plasma_model.parameters.sol.λ_omp * boundary_plasma_model.parameters.target.f_omp2target_expansion
+    boundary_plasma_model.parameters.target.α_sp = atan(sol.Bp[end] / sol.Bt[end])
+    boundary_plasma_model.parameters.target.f_pol_projection = tan(boundary_plasma_model.parameters.target.α_sp) # can be calculated internally
+    boundary_plasma_model.parameters.target.θ_sp = sol.strike_angles[end]
+    boundary_plasma_model.parameters.target.f_perp_projection = 1.0 / cos(boundary_plasma_model.parameters.target.θ_sp) # can be calculated internally
+    boundary_plasma_model.parameters.target.f_spread_pfr = 1.0
+
+    boundary_plasma_model.parameters.integral.T_down = 0.0
+    boundary_plasma_model.parameters.integral.Zeff_exp = -0.3
+    boundary_plasma_model.parameters.integral.Texp = 0.5
+    boundary_plasma_model.parameters.integral.Lexp = 1.0
+    boundary_plasma_model.parameters.integral.κ0 = 2390.0
 end

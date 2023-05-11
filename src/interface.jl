@@ -1,15 +1,13 @@
-DivertorHeatFlux(; model::Symbol=:lengyel) = DivertorHeatFlux(nothing, model)
-
-DivertorHeatFlux(dd::Union{Nothing,IMAS.dd}; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)
-
-DivertorHeatFlux(dd::Union{Nothing,IMAS.dd}, model::Symbol) = DivertorHeatFlux(dd, DivertorHeatFluxModel(model))
-
 function DivertorHeatFluxModel(model::Symbol)
     if model == :lengyel
         return LengyelModel()
     else
-        error()
+        error("Divertor heat flux model `$model` is not recognized")
     end
+end
+
+function DivertorHeatFluxModel(par::DivertorHeatFluxParameters)
+    return DivertorHeatFluxModel(par.model, par.setup)
 end
 
 function DivertorHeatFluxModel(model::Symbol, setup::DivertorHeatFluxModelParameters)
@@ -18,9 +16,4 @@ function DivertorHeatFluxModel(model::Symbol, setup::DivertorHeatFluxModelParame
     else
         error()
     end
-end
-
-DivertorHeatFluxModel(par::DivertorHeatFluxParameters) = DivertorHeatFluxModel(par.model, par.setup)
-
-function export2dd(dd::IMAS.dd, model::DivertorHeatFluxModel; kw...)
 end
