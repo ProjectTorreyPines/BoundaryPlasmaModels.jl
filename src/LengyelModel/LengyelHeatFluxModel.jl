@@ -1,4 +1,3 @@
-using LaTeXStrings
 import NumericalIntegration
 import ADAS
 import IMASDD
@@ -106,8 +105,9 @@ function show_summary(model::LengyelModel)
     printfmtln("│  ├─ {:<10} = {:.2f} eV", "Te_up", model.parameters.sol.T_up)
     printfmtln("│  ├─ {:<10} = {:.2e} m^-3", "ne_up", model.parameters.sol.n_up)
     printfmtln("│  ├─ {:<10} = {:.1f} T", "Bp_omp", model.parameters.plasma.Bpol_omp)
+    printfmtln("│  ├─ {:<10} = {:.1f} T", "Bt_omp", model.parameters.plasma.Bt_omp)
     printfmtln("│  ├─ {:<10} = {:.1f} m", "R_omp", model.parameters.plasma.R_omp)
-    printfmtln("│  ├─ {:<10} = {:.1f} MW.T/m", "PBp/R", model.parameters.plasma.P_SOL / 1e6 / model.parameters.plasma.R_omp * model.parameters.plasma.Bpol_omp)
+    printfmtln("│  ├─ {:<10} = {:.1f} MW.T/m", "Psol⋅Bp/R", model.parameters.plasma.P_SOL / 1e6 / model.parameters.plasma.R_omp * model.parameters.plasma.Bpol_omp)
     printfmtln("│  └─ {:<10} = {:.4f} m", "λ_omp", model.parameters.sol.λ_omp)
     printfmtln("├─ target parameters ")
     printfmtln("│  ├─ {:<10} = {:.4f} m ", "λ_target", model.parameters.target.λ_target)
@@ -116,16 +116,15 @@ function show_summary(model::LengyelModel)
     printfmtln("│  └─ {:<10} = {:.1f} m", "spread_pfr", model.parameters.target.f_spread_pfr)
     printfmtln("├─ impurities ")
     for (i, f) in zip(model.parameters.sol.imp, model.parameters.sol.f_imp)
-        printfmtln("│  ├─ {:<4} | {:<10.3f}  ", string(i), f)
-
+        printfmtln("│  ├─ {:<10} = {:3.3f}%  ", string(i), f * 100)
     end
-    printfmtln("│  └─ {:<15} = {:.2f} ", "Zeff_up", model.results.zeff_up)
+    printfmtln("│  └─ {:<10} = {:.2f} ", "Zeff_up", model.results.zeff_up)
     printfmtln("└─ model output ")
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2", "q_poloidal_omp", model.results.q_poloidal_omp / 1e6)
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2 ", "q_rad", (model.results.q_rad) / 1e6)
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2 ", "q_rad_effective", (model.results.q_parallel_omp - model.results.q_parallel_target_unprojected) / 1e6)
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2", "q_parallel_target", model.results.q_parallel_target_unprojected / 1e6)
-    printfmtln("   ├─ {:<15} = {:.2f} MW/m^2 ", "q_perp_target", model.results.q_perp_target / 1e6)
-    printfmtln("   └─ {:<15} = {:.2f} MW/m^2 ", "q_perp_target_spread", model.results.q_perp_target_spread / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_poloidal_omp", model.results.q_poloidal_omp / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_rad", (model.results.q_rad) / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_rad_effective", (model.results.q_parallel_omp - model.results.q_parallel_target_unprojected) / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_parallel_target", model.results.q_parallel_target_unprojected / 1e6)
+    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_perp_target", model.results.q_perp_target / 1e6)
+    printfmtln("   └─ {:<20} = {:.2f} MW/m^2 ", "q_perp_target_spread", model.results.q_perp_target_spread / 1e6)
 end
