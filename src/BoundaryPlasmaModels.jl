@@ -1,5 +1,4 @@
 module BoundaryPlasmaModels
-using RecipesBase
 using IMAS
 
 abstract type DivertorHeatFluxModel end
