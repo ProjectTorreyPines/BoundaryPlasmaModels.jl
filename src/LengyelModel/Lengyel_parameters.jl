@@ -27,22 +27,19 @@ Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     f_omp2target_expansion::Entry{T} = Entry(T, "-", "Flux expansion and projection of λ_omp onto the target")
-    f_perp_projection::Entry{T} = Entry(T, "-", "Radial projection factor") # can be calculated internally from θ_sp
-    f_pol_projection::Entry{T} = Entry(T, "-", "Poloidal projection factor") # can be calculated internally from α_sp
+    f_spread_pfr::Entry{T} = Entry(T, "-", "Heat flux expansion factor in the private flux region (eg. due to transport) should be >= 1.0")
     α_sp::Entry{T} = Entry(T, "rad", "Pitch angle at the outer strike point")
-    θ_sp::Entry{T} = Entry(T, "rad", "Poloidal angle of the target at the outer strike point")
-    f_spread_pfr::Entry{T} = Entry(T, "-", "????")
-    λ_target::Entry{T} = Entry(T, "m", "Heat flux decay length at the target")
+    θ_sp::Entry{T} = Entry(T, "rad", "Poloidal angle of the target at the outer strike point") # [CURRENTLY NOT USED]
 end
 
 Base.@kwdef mutable struct LengyelIntegralParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    T_down::Entry{T} = Entry(T, "-", "???")
-    Zeff_exp::Entry{T} = Entry(T, "-", "???")
-    Texp::Entry{T} = Entry(T, "-", "???")
-    Lexp::Entry{T} = Entry(T, "-", "???")
-    κ0::Entry{T} = Entry(T, "-", "???")
+    T_down::Entry{T} = Entry(T, "eV", "Temperature downstream")
+    Zeff_exp::Entry{T} = Entry(T, "-", "Exponent of the Zeff dependency in Spitzer heat conductivity")
+    Texp::Entry{T} = Entry(T, "-", "Exponent of the temperature dependency in Spitzer heat conductivity")
+    Lexp::Entry{T} = Entry(T, "-", "Exponent of the cooling dependency in Spitzer heat conductivity")
+    κ0::Entry{T} = Entry(T, "W⋅m/eV^3.5", "Heat conductivity")
 end
 
 Base.@kwdef mutable struct LengyelModelParameters{T} <: AbstractParameters where {T<:Real}

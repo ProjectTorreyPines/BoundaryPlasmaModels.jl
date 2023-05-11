@@ -12,6 +12,9 @@ mutable struct LengyelModelResults{T}
     q_perp_target::T
     q_perp_target_spread::T
     zeff_up::T
+    λ_target::T
+    f_pol_projection::T
+    f_perp_projection::T
 end
 
 function Base.show(io::IO, r::LengyelModelResults)
@@ -64,13 +67,16 @@ V_legyel_ADAS(s, i) = V_legyel_ADAS(i.T_down, s.T_up, s.f_imp, s.imp; ne=s.n_up,
 
 function compute_lengyel_model(par::LengyelModelParameters)
     r = LengyelModelResults()
+    r.λ_target = par.sol.λ_omp * par.target.f_omp2target_expansion
+    r.f_pol_projection = tan(par.target.α_sp)
+    r.f_perp_projection = 1.0 / sin(par.target.θ_sp)
     r.q_poloidal_omp = compute_q_poloidal_omp(par)
     r.q_parallel_omp = compute_q_parallel_omp(par)
     r.q_rad = compute_qrad(par)
     r.q_parallel_target_unprojected = sqrt(r.q_parallel_omp^2.0 - r.q_rad^2.0)
     r.q_parallel_target_projected = r.q_parallel_target_unprojected / par.target.f_omp2target_expansion
-    r.q_perp_target = r.q_parallel_target_projected * par.target.f_pol_projection
-    r.q_perp_target_spread = r.q_perp_target * par.target.f_spread_pfr
+    r.q_perp_target = r.q_parallel_target_projected * r.f_pol_projection
+    r.q_perp_target_spread = r.q_perp_target / par.target.f_spread_pfr
     r.zeff_up = compute_zeff_up(par)
     return r
 end
@@ -101,30 +107,33 @@ end
 function show_summary(model::LengyelModel)
     printfmtln("Lengyel model")
     printfmtln("├─ upstream parameters ")
-    printfmtln("│  ├─ {:<10} = {:.2f} MW", "P_SOL", model.parameters.plasma.P_SOL / 1e6)
-    printfmtln("│  ├─ {:<10} = {:.2f} eV", "Te_up", model.parameters.sol.T_up)
-    printfmtln("│  ├─ {:<10} = {:.2e} m^-3", "ne_up", model.parameters.sol.n_up)
-    printfmtln("│  ├─ {:<10} = {:.1f} T", "Bp_omp", model.parameters.plasma.Bpol_omp)
-    printfmtln("│  ├─ {:<10} = {:.1f} T", "Bt_omp", model.parameters.plasma.Bt_omp)
-    printfmtln("│  ├─ {:<10} = {:.1f} m", "R_omp", model.parameters.plasma.R_omp)
-    printfmtln("│  ├─ {:<10} = {:.1f} MW.T/m", "Psol⋅Bp/R", model.parameters.plasma.P_SOL / 1e6 / model.parameters.plasma.R_omp * model.parameters.plasma.Bpol_omp)
-    printfmtln("│  └─ {:<10} = {:.4f} m", "λ_omp", model.parameters.sol.λ_omp)
+    printfmtln("│  ├─ {:<22} = {:.2f} MW", "P_SOL", model.parameters.plasma.P_SOL / 1e6)
+    printfmtln("│  ├─ {:<22} = {:.2f} eV", "Te_up", model.parameters.sol.T_up)
+    printfmtln("│  ├─ {:<22} = {:.2e} m^-3", "ne_up", model.parameters.sol.n_up)
+    printfmtln("│  ├─ {:<22} = {:.1f} T", "Bp_omp", model.parameters.plasma.Bpol_omp)
+    printfmtln("│  ├─ {:<22} = {:.1f} T", "Bt_omp", model.parameters.plasma.Bt_omp)
+    printfmtln("│  ├─ {:<22} = {:.1f} m", "R_omp", model.parameters.plasma.R_omp)
+    printfmtln("│  ├─ {:<22} = {:.1f} MW.T/m", "Psol⋅Bp/R", model.parameters.plasma.P_SOL / 1e6 / model.parameters.plasma.R_omp * model.parameters.plasma.Bpol_omp)
+    printfmtln("│  └─ {:<22} = {:.4f} m", "λ_omp", model.parameters.sol.λ_omp)
     printfmtln("├─ target parameters ")
-    printfmtln("│  ├─ {:<10} = {:.4f} m ", "λ_target", model.parameters.target.λ_target)
-    printfmtln("│  ├─ {:<10} = {:.1f} deg", "α_pitch", model.parameters.target.α_sp * 180 / π)
-    printfmtln("│  ├─ {:<10} = {:.1f} deg", "θ_target", model.parameters.target.θ_sp * 180 / π)
-    printfmtln("│  └─ {:<10} = {:.1f} m", "spread_pfr", model.parameters.target.f_spread_pfr)
+    printfmtln("│  ├─ {:<22} = {:.4f}", "f_omp2target_expansion", model.parameters.target.f_omp2target_expansion)
+    printfmtln("│  ├─ {:<22} = {:.4f}", "λ_target", model.results.λ_target)
+    printfmtln("│  ├─ {:<22} = {:.1f} deg", "α_pitch", model.parameters.target.α_sp * 180 / π)
+    printfmtln("│  ├─ {:<22} = {:.1f}", "f_pol_projection", model.results.f_pol_projection)
+    printfmtln("│  ├─ {:<22} = {:.1f} deg", "θ_target", model.parameters.target.θ_sp * 180 / π)
+    printfmtln("│  ├─ {:<22} = {:.1f}", "f_perp_projection", model.results.f_perp_projection)
+    printfmtln("│  └─ {:<22} = {:.1f} m", "spread_pfr", model.parameters.target.f_spread_pfr)
     printfmtln("├─ impurities ")
     for (i, f) in zip(model.parameters.sol.imp, model.parameters.sol.f_imp)
-        printfmtln("│  ├─ {:<10} = {:3.3f}%  ", string(i), f * 100)
+        printfmtln("│  ├─ {:<22} = {:3.3f}%  ", string(i), f * 100)
     end
-    printfmtln("│  └─ {:<10} = {:.2f} ", "Zeff_up", model.results.zeff_up)
+    printfmtln("│  └─ {:<22} = {:.2f} ", "Zeff_up", model.results.zeff_up)
     printfmtln("└─ model output ")
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_poloidal_omp", model.results.q_poloidal_omp / 1e6)
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_rad", (model.results.q_rad) / 1e6)
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_rad_effective", (model.results.q_parallel_omp - model.results.q_parallel_target_unprojected) / 1e6)
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2", "q_parallel_target", model.results.q_parallel_target_unprojected / 1e6)
-    printfmtln("   ├─ {:<20} = {:.2f} MW/m^2 ", "q_perp_target", model.results.q_perp_target / 1e6)
-    printfmtln("   └─ {:<20} = {:.2f} MW/m^2 ", "q_perp_target_spread", model.results.q_perp_target_spread / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_poloidal_omp", model.results.q_poloidal_omp / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2 ", "q_rad", (model.results.q_rad) / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2 ", "q_rad_effective", (model.results.q_parallel_omp - model.results.q_parallel_target_unprojected) / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_parallel_target", model.results.q_parallel_target_unprojected / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2 ", "q_perp_target", model.results.q_perp_target / 1e6)
+    printfmtln("   └─ {:<22} = {:.2f} MW/m^2 ", "q_perp_target_spread", model.results.q_perp_target_spread / 1e6)
 end

@@ -21,12 +21,9 @@ function setup_model(boundary_plasma_model::LengyelModel, dd::IMAS.dd)
     boundary_plasma_model.parameters.sol.imp = [:Ne]
 
     boundary_plasma_model.parameters.target.f_omp2target_expansion = (lfs_sol2[2].r[lfs_sol2[2].midplane_index] - lfs_sol2[1].r[lfs_sol2[1].midplane_index]) / sqrt((lfs_sol2[2].r[end] - lfs_sol2[1].r[end])^2 + (lfs_sol2[2].z[end] - lfs_sol2[1].z[end])^2)
-    boundary_plasma_model.parameters.target.λ_target = boundary_plasma_model.parameters.sol.λ_omp * boundary_plasma_model.parameters.target.f_omp2target_expansion
-    boundary_plasma_model.parameters.target.α_sp = atan(sol.Bp[end] / sol.Bt[end])
-    boundary_plasma_model.parameters.target.f_pol_projection = tan(boundary_plasma_model.parameters.target.α_sp) # can be calculated internally
-    boundary_plasma_model.parameters.target.θ_sp = sol.strike_angles[end]
-    boundary_plasma_model.parameters.target.f_perp_projection = 1.0 / cos(boundary_plasma_model.parameters.target.θ_sp) # can be calculated internally
     boundary_plasma_model.parameters.target.f_spread_pfr = 1.0
+    boundary_plasma_model.parameters.target.α_sp = atan(sol.Bp[end] / sol.Bt[end])
+    boundary_plasma_model.parameters.target.θ_sp = sol.strike_angles[end] # [CURRENTLY NOT USED]
 
     boundary_plasma_model.parameters.integral.T_down = 0.0
     boundary_plasma_model.parameters.integral.Zeff_exp = -0.3
