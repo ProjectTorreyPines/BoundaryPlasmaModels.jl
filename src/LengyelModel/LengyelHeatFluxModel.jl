@@ -5,8 +5,6 @@ import IMASDD
 import FusionGeometryTools
 using Formatting
 
-include("parameters.jl")
-
 mutable struct LengyelModelResults{T}
     q_poloidal_omp::T
     q_parallel_omp::T
@@ -31,96 +29,11 @@ mutable struct LengyelModel <: DivertorHeatFluxModel
     results::LengyelModelResults
 end
 
-LengyelModel() = LengyelModel(LengyelModelParameters{Real}())
+LengyelModel() = LengyelModel(LengyelModelParameters{Float64}())
 
 LengyelModel(par::LengyelModelParameters) = LengyelModel(par, LengyelModelResults())
 
 (model::LengyelModel)() = model.results = compute_lengyel_model(model.parameters)
-
-function setup_model(model::LengyelModel, dd::IMAS.dd)
-    set_heatfluxmodel_plasma_parameters_from_dd(model, dd)
-    set_heatfluxmodel_sol_parameters_from_dd(model, dd)
-    set_λ_omp(model)
-    set_heatfluxmodel_target_parameters_from_dd(model, dd)
-end
-
-function set_heatfluxmodel_sol_parameters(model::LengyelModel, dd::IMAS.dd)
-    if model.parameters.sol.method == :dd
-        set_heatfluxmodel_sol_parameters_from_dd(model, dd)
-    elseif model.parameters.sol.method == :manual
-    else
-        error()
-    end
-end
-
-function set_heatfluxmodel_plasma_parameters(model::LengyelModel, dd::Union{IMAS.dd,Nothing})
-    if model.parameters.plasma.method == :dd
-        set_heatfluxmodel_plasma_parameters_from_dd(model, dd)
-    elseif model.parameters.plasma.method == :manual
-    else
-        error("model.parameters.plasma.method = $(model.parameters.plasma.method)")
-    end
-end
-
-function set_heatfluxmodel_plasma_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    d = Dict(
-        :P_SOL => get_PSOL(dd),
-        :R_omp => FusionGeometryTools.get_R_omp(dd),
-        :Ip => get_Ip(dd),
-        :κ => get_κ(dd),
-        :ϵ => get_ϵ(dd),
-        :Bt_omp => FusionGeometryTools.get_Bt_omp(dd),
-        :Bpol_omp => FusionGeometryTools.get_Bpol_omp(dd)
-    )
-    for (k, v) in d
-        setproperty!(model.parameters.plasma, k, v)
-    end
-end
-
-function set_heatfluxmodel_sol_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    d = Dict(
-        :n_up => get_omp_density(dd),
-        :T_up => get_omp_Te(dd)
-    )
-    p = model.parameters.sol
-    for (k, v) in d
-        setproperty!(p, k, v)
-    end
-end
-
-function set_heatfluxmodel_target_parameters_from_dd(model::LengyelModel, dd::IMAS.dd)
-    loc = Symbol.(split(string(model.parameters.target.location), "_"))
-    d = Dict(
-        :λ_target => get_projected_λ_omp_target(model.parameters.sol.λ_omp, dd; location=loc),
-        :f_omp2target_expension => get_projected_λ_omp_target(model.parameters.sol.λ_omp, dd; location=loc) / model.parameters.sol.λ_omp,
-        :α_sp => get_α_sp(dd, loc) * 180 / pi,
-        :f_pol_projection => tan(get_α_sp(dd, loc)),
-        :θ_sp => get_θ_sp(dd, loc) * 180 / pi,
-        :f_perp_projection => 1 / cos(get_θ_sp(dd, loc))
-    )
-    p = model.parameters.target
-    for (k, v) in d
-        setproperty!(p, k, v)
-    end
-end
-
-function set_λ_omp(model)
-    if model.parameters.sol.λ_omp_scaling isa Number
-        model.parameters.sol.λ_omp = model.parameters.sol.λ_omp_scaling
-    else
-        model.parameters.sol.λ_omp = get_λ_omp(model.parameters)
-    end
-end
-
-function get_λ_omp(parameters)
-    if parameters.sol.λ_omp_scaling == :eich
-        return λq_eich(parameters.plasma)
-    elseif parameters.sol.λ_omp_scaling == :none
-        return parameters.sol.λ_omp
-    else
-        error()
-    end
-end
 
 """ Perform weighted cooling rate integral over specified temperature interval
 # Inputs:  Tmin   minimum temperature for integral (eV)
@@ -165,17 +78,21 @@ function compute_lengyel_model(par::LengyelModelParameters)
 end
 
 compute_q_parallel_omp(p::LengyelModelParameters) = compute_q_parallel_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp, p.plasma.Bpol_omp, p.plasma.Bt_omp)
+
 compute_q_poloidal_omp(p::LengyelModelParameters) = compute_q_poloidal_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp)
+
 compute_q_poloidal_omp(P_SOL::T, R::T, λ_q::T) where {T<:Float64} = begin
     @assert R > 0.0 && λ_q > 0
     P_SOL / (2.0 * pi * R * λ_q)
 end
+
 compute_q_parallel_omp(P_SOL::T, R::T, λ_q::T, Bpol::T, Bt::T) where {T<:Float64} = begin
     @assert (R > 0.0 && Bpol > 0 && Bt > 0.0 && λ_q > 0)
     P_SOL / (2.0 * pi * R * λ_q) / sin(atan(Bpol / Bt))
 end
 
 compute_qrad(p::LengyelModelParameters) = compute_qrad(p.sol, p.integral)
+
 compute_qrad(s, i) = s.f_adhoc * s.n_up * s.T_up * V_legyel_ADAS(s, i)
 
 function compute_zeff_up(par::LengyelModelParameters)

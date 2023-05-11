@@ -1,6 +1,3 @@
-# mutable struct DivertorHeatFlux{D<:Union{Nothing,IMAS.dd}, M<: DivertorHeatFluxModel}
-#     model :: M
-# end
 DivertorHeatFlux(; model::Symbol=:lengyel) = DivertorHeatFlux(nothing, model)
 
 DivertorHeatFlux(dd::Union{Nothing,IMAS.dd}; model::Symbol=:lengyel) = DivertorHeatFlux(dd, model)

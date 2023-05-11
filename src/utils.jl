@@ -17,7 +17,6 @@ get_κ(eqt::IMAS.equilibrium__time_slice) = eqt.profiles_1d.elongation[end]
 get_ϵ(dd::IMAS.dd) = get_ϵ(dd.equilibrium.time_slice[])
 get_ϵ(eqt::IMAS.equilibrium__time_slice) = eqt.boundary.minor_radius / eqt.boundary.geometric_axis.r
 
-
 get_Ip(dd::IMAS.dd) = get_Ip(dd.equilibrium.time_slice[])
 get_Ip(eqt::IMAS.equilibrium__time_slice) = eqt.global_quantities.ip
 
