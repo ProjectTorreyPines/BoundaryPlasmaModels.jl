@@ -1,5 +1,4 @@
 module BoundaryPlasmaModels
-using DocStringExtensions
 using RecipesBase
 using IMAS
 
