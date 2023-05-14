@@ -1,4 +1,5 @@
 import NumericalIntegration
+import SimulationParameters
 import ADAS
 import IMASDD
 using Formatting
@@ -32,7 +33,10 @@ end
 
 LengyelModel() = LengyelModel(LengyelModelParameters{Float64}())
 
-LengyelModel(par::LengyelModelParameters) = LengyelModel(par, LengyelModelResults())
+function LengyelModel(par::LengyelModelParameters)
+    SimulationParameters.setup_parameters!(par)
+    LengyelModel(par, LengyelModelResults())
+end
 
 (model::LengyelModel)() = model.results = compute_lengyel_model(model.parameters)
 

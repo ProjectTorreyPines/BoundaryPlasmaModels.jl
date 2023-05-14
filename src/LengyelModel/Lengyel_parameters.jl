@@ -35,16 +35,16 @@ end
 Base.@kwdef mutable struct LengyelIntegralParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
-    T_down::Entry{T} = Entry(T, "eV", "Temperature downstream")
-    Zeff_exp::Entry{T} = Entry(T, "-", "Exponent of the Zeff dependency in Spitzer heat conductivity")
-    Texp::Entry{T} = Entry(T, "-", "Exponent of the temperature dependency in Spitzer heat conductivity")
-    Lexp::Entry{T} = Entry(T, "-", "Exponent of the cooling dependency in Spitzer heat conductivity")
-    κ0::Entry{T} = Entry(T, "W⋅m/eV^3.5", "Heat conductivity")
+    T_down::Entry{T} = Entry(T, "eV", "Temperature downstream"; default=0.0)
+    Zeff_exp::Entry{T} = Entry(T, "-", "Exponent of the Zeff dependency in Spitzer heat conductivity"; default=-0.3)
+    Texp::Entry{T} = Entry(T, "-", "Exponent of the temperature dependency in Spitzer heat conductivity"; default=0.5)
+    Lexp::Entry{T} = Entry(T, "-", "Exponent of the cooling dependency in Spitzer heat conductivity"; default=1.0)
+    κ0::Entry{T} = Entry(T, "W⋅m/eV^3.5", "Heat conductivity"; default=2390.0)
 end
 
 Base.@kwdef mutable struct LengyelModelParameters{T} <: AbstractParameters where {T<:Real}
     _parent::WeakRef = WeakRef(nothing)
-    _name::Symbol = :not_set
+    _name::Symbol = :LengyelModelParameters
     sol::LengyelModelSOLParameters{T} = LengyelModelSOLParameters{T}()
     plasma::LengyelModelPlasmaParameters{T} = LengyelModelPlasmaParameters{T}()
     target::LengyelModelTargetParameters{T} = LengyelModelTargetParameters{T}()

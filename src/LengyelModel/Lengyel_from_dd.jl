@@ -24,10 +24,5 @@ function setup_model(boundary_plasma_model::LengyelModel, dd::IMAS.dd)
     boundary_plasma_model.parameters.target.f_spread_pfr = 1.0
     boundary_plasma_model.parameters.target.α_sp = atan(sol.Bp[end] / sol.Bt[end])
     boundary_plasma_model.parameters.target.θ_sp = sol.strike_angles[end] # [CURRENTLY NOT USED]
-
-    boundary_plasma_model.parameters.integral.T_down = 0.0
-    boundary_plasma_model.parameters.integral.Zeff_exp = -0.3
-    boundary_plasma_model.parameters.integral.Texp = 0.5
-    boundary_plasma_model.parameters.integral.Lexp = 1.0
-    boundary_plasma_model.parameters.integral.κ0 = 2390.0
+    display(boundary_plasma_model.parameters)
 end
