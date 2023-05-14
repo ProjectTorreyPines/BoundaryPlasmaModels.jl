@@ -77,7 +77,7 @@ function compute_lengyel_model(par::LengyelModelParameters)
     r.q_poloidal_omp = compute_q_poloidal_omp(par)
     r.q_parallel_omp = compute_q_parallel_omp(par)
     r.q_rad = compute_qrad(par)
-    r.q_parallel_target_unprojected = sqrt(r.q_parallel_omp^2.0 - r.q_rad^2.0)
+    r.q_parallel_target_unprojected = sqrt(max(0.0, r.q_parallel_omp^2.0 - r.q_rad^2.0))
     r.q_parallel_target_projected = r.q_parallel_target_unprojected / par.target.f_omp2target_expansion
     r.q_perp_target = r.q_parallel_target_projected * r.f_pol_projection
     r.q_perp_target_spread = r.q_perp_target / par.target.f_spread_pfr
