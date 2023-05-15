@@ -25,5 +25,8 @@ function setup_model(boundary_plasma_model::LengyelModel, dd::IMAS.dd)
     boundary_plasma_model.parameters.target.f_spread_pfr = 1.0
     boundary_plasma_model.parameters.target.α_sp = atan(sol.Bp[end] / sol.Bt[end])
     boundary_plasma_model.parameters.target.θ_sp = sol.strike_angles[end] # [CURRENTLY NOT USED]
-    display(boundary_plasma_model.parameters)
 end
+
+# questions:
+# NO R_target ?
+# Heat flux treated not as exponential decay
