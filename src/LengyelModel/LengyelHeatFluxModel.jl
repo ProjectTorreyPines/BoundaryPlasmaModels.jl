@@ -89,14 +89,14 @@ compute_q_parallel_omp(p::LengyelModelParameters) = compute_q_parallel_omp(p.pla
 
 compute_q_poloidal_omp(p::LengyelModelParameters) = compute_q_poloidal_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp)
 
-compute_q_poloidal_omp(P_SOL::T, R::T, λ_q::T) where {T<:Float64} = begin
+function compute_q_poloidal_omp(P_SOL::T, R::T, λ_q::T) where {T<:Float64}
     @assert R > 0.0 && λ_q > 0
-    P_SOL / (2.0 * pi * R * λ_q)
+    return P_SOL / (2π * R * λ_q)
 end
 
-compute_q_parallel_omp(P_SOL::T, R::T, λ_q::T, Bpol::T, Bt::T) where {T<:Float64} = begin
+function compute_q_parallel_omp(P_SOL::T, R::T, λ_q::T, Bpol::T, Bt::T) where {T<:Float64}
     @assert (R > 0.0 && Bpol > 0 && Bt > 0.0 && λ_q > 0)
-    P_SOL / (2.0 * pi * R * λ_q) / sin(atan(Bpol / Bt))
+    return P_SOL / (2π * R * λ_q) / sin(atan(Bpol / Bt))
 end
 
 compute_qrad(p::LengyelModelParameters) = compute_qrad(p.sol, p.integral)
@@ -126,15 +126,15 @@ function show_summary(model::LengyelModel)
     printfmtln("│  ├─ {:<22} = {:.1f}", "f_pol_projection", model.results.f_pol_projection)
     printfmtln("│  ├─ {:<22} = {:.1f} deg", "θ_target", model.parameters.target.θ_sp * 180 / π)
     printfmtln("│  ├─ {:<22} = {:.1f}", "f_perp_projection", model.results.f_perp_projection)
-    printfmtln("│  └─ {:<22} = {:.1f} m", "spread_pfr", model.parameters.target.f_spread_pfr)
+    printfmtln("│  └─ {:<22} = {:.1f}", "spread_pfr", model.parameters.target.f_spread_pfr)
     printfmtln("├─ impurities ")
     for (i, f) in zip(model.parameters.sol.imp, model.parameters.sol.f_imp)
         printfmtln("│  ├─ {:<22} = {:3.3f}%  ", string(i), f * 100)
     end
     printfmtln("│  └─ {:<22} = {:.2f} ", "Zeff_up", model.results.zeff_up)
     printfmtln("└─ model output ")
-    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
     printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_poloidal_omp", model.results.q_poloidal_omp / 1e6)
+    printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_parallel_omp", model.results.q_parallel_omp / 1e6)
     printfmtln("   ├─ {:<22} = {:.2f} MW/m^2 ", "q_rad", (model.results.q_rad) / 1e6)
     printfmtln("   ├─ {:<22} = {:.2f} MW/m^2 ", "q_rad_effective", (model.results.q_parallel_omp - model.results.q_parallel_target_unprojected) / 1e6)
     printfmtln("   ├─ {:<22} = {:.2f} MW/m^2", "q_parallel_target", model.results.q_parallel_target_unprojected / 1e6)
