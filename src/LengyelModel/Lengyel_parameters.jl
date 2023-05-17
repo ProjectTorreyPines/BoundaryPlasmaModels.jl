@@ -27,6 +27,7 @@ Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     f_omp2target_expansion::Entry{T} = Entry(T, "-", "Flux expansion and projection of λ_omp onto the target")
+    R::Entry{T} = Entry(T, "m", "Major radius at the outer strike point")
     f_spread_pfr::Entry{T} = Entry(T, "-", "Heat flux expansion factor in the private flux region (eg. due to transport) should be >= 1.0")
     α_sp::Entry{T} = Entry(T, "rad", "Pitch angle at the outer strike point")
     θ_sp::Entry{T} = Entry(T, "rad", "Poloidal angle of the target at the outer strike point") # [CURRENTLY NOT USED]

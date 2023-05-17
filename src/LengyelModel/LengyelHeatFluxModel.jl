@@ -78,7 +78,7 @@ function compute_lengyel_model(par::LengyelModelParameters)
     r.q_parallel_omp = compute_q_parallel_omp(par)
     r.q_rad = compute_qrad(par)
     r.q_parallel_target_unprojected = sqrt(max(0.0, r.q_parallel_omp^2.0 - r.q_rad^2.0))
-    r.q_parallel_target_projected = r.q_parallel_target_unprojected / par.target.f_omp2target_expansion
+    r.q_parallel_target_projected = r.q_parallel_target_unprojected / par.target.f_omp2target_expansion * (par.plasma.R_omp  / par.target.R)
     r.q_perp_target = r.q_parallel_target_projected * r.f_pol_projection
     r.q_perp_target_spread = r.q_perp_target / par.target.f_spread_pfr
     r.zeff_up = compute_zeff_up(par)
@@ -130,7 +130,7 @@ function show_summary(model::LengyelModel)
     printfmtln("Target")
     printfmtln("├─ {:<22} = {:.4f}", "f_omp2target_expansion", p.target.f_omp2target_expansion)
     printfmtln("├─ {:<22} = {:.4f}", "λ_target", r.λ_target)
-    printfmtln("├─ {:<22} = {:.4f} m²", "area_target", compute_heat_channel_area(p.plasma.R_omp, r.λ_target)) # no R_target?
+    printfmtln("├─ {:<22} = {:.4f} m²", "area_target", compute_heat_channel_area(p.target.R, r.λ_target))
     printfmtln("├─ {:<22} = {:.1f} deg", "α_pitch", p.target.α_sp * 180 / π)
     printfmtln("├─ {:<22} = {:.1f}", "f_pol_projection", r.f_pol_projection)
     printfmtln("├─ {:<22} = {:.1f} deg", "θ_target", p.target.θ_sp * 180 / π)

@@ -72,6 +72,7 @@ function setup_model(
     end
 
     boundary_plasma_model.parameters.target.f_omp2target_expansion = sqrt((sol2.r[strike_index2] - sol1.r[strike_index1])^2 + (sol2.z[strike_index2] - sol1.z[strike_index1])^2) / (sol2.r[sol2.midplane_index] - sol1.r[sol1.midplane_index])
+    boundary_plasma_model.parameters.target.R = sol1.r[strike_index1]
     boundary_plasma_model.parameters.target.f_spread_pfr = f_spread_pfr
     boundary_plasma_model.parameters.target.α_sp = atan(sol1.Bp[strike_index1] / sol1.Bt[strike_index1])
     boundary_plasma_model.parameters.target.θ_sp = sol1.strike_angles[strike_index1 == 1 ? 1 : 2] # [CURRENTLY NOT USED]
