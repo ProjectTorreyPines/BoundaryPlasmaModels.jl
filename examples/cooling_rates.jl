@@ -45,24 +45,7 @@ function Kallenbach_neTau(Te)
     interp_linear = Interpolations.linear_interpolation(Temodel, neTau_model)
     return interp_linear(Te)
 end
-""" 
-Perform weighted cooling rate integral over specified temperature interval
-# Inputs:  Tmin   minimum temperature for integral (eV)
-#          Tmax   maximum temperature for integral (eV)
-#          Texp   Exponent for temperature weighting
-#          Lexp   Exponent for cooling rate weighting
-#          Zimp   Z of impurity (Ar: 18; Kr: 36; Xe: 54)
-"""
 
-function Lint(Tmin, Tmax,Texp,Lexp, imp::Symbol; N=101, cooling_rate_data=get_cooling_rates())
-
-    Te = Tedata
-    Lz = Lzdata*1.e-6
-    T = LinRange(Tmin,Tmax,N)
-    Lz_ = Interpolations.linear_interpolation(Te,Lz)
-    return NumericalIntegration.integrate(T,T .^ Texp .* Lz_(T).^ Lexp)
-end
-    
 
 
 using Plots
@@ -150,8 +133,8 @@ xtickfontsize=15,
 ytickfontsize=15
 )
 
-
-
+using ADAS
+using Plots
 imps =[:Ne,:Ar,:Kr,:Xe]
 for imp in imps
 v = []
