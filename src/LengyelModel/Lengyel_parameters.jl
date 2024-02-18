@@ -1,6 +1,6 @@
 using SimulationParameters: AbstractParameters, Entry, Switch
 
-Base.@kwdef mutable struct LengyelModelPlasmaParameters{T} <: AbstractParameters where {T<:Real}
+Base.@kwdef mutable struct LengyelModelPlasmaParameters{T<:Real} <: AbstractParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     P_SOL::Entry{T} = Entry{T}("W", "Power coming through the separatrix")
@@ -12,7 +12,7 @@ Base.@kwdef mutable struct LengyelModelPlasmaParameters{T} <: AbstractParameters
     Bpol_omp::Entry{T} = Entry{T}("T", "Poloidal magnetic field at the outer midplane")
 end
 
-Base.@kwdef mutable struct LengyelModelSOLParameters{T} <: AbstractParameters where {T<:Real}
+Base.@kwdef mutable struct LengyelModelSOLParameters{T<:Real} <: AbstractParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     n_up::Entry{T} = Entry{T}("m⁻³", "Upstream density")
@@ -23,7 +23,7 @@ Base.@kwdef mutable struct LengyelModelSOLParameters{T} <: AbstractParameters wh
     f_adhoc::Entry{T} = Entry{T}("-", "Radiation enhancement factor"; default=1.0)
 end
 
-Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters where {T<:Real}
+Base.@kwdef mutable struct LengyelModelTargetParameters{T<:Real} <: AbstractParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     f_omp2target_expansion::Entry{T} = Entry{T}("-", "Flux expansion and projection of λ_omp onto the target")
@@ -33,7 +33,7 @@ Base.@kwdef mutable struct LengyelModelTargetParameters{T} <: AbstractParameters
     θ_sp::Entry{T} = Entry{T}("rad", "Poloidal angle of the target at the outer strike point") # [CURRENTLY NOT USED]
 end
 
-Base.@kwdef mutable struct LengyelIntegralParameters{T} <: AbstractParameters where {T<:Real}
+Base.@kwdef mutable struct LengyelIntegralParameters{T<:Real} <: AbstractParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     T_down::Entry{T} = Entry{T}("eV", "Temperature downstream"; default=0.0)
@@ -43,7 +43,7 @@ Base.@kwdef mutable struct LengyelIntegralParameters{T} <: AbstractParameters wh
     κ0::Entry{T} = Entry{T}("W⋅m/eV^3.5", "Heat conductivity"; default=2390.0)
 end
 
-Base.@kwdef mutable struct LengyelModelParameters{T} <: AbstractParameters where {T<:Real}
+Base.@kwdef mutable struct LengyelModelParameters{T<:Real} <: AbstractParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :LengyelModelParameters
     sol::LengyelModelSOLParameters{T} = LengyelModelSOLParameters{T}()
