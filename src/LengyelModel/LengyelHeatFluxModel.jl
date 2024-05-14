@@ -24,7 +24,7 @@ function Base.show(io::IO, r::LengyelModelResults)
     end
 end
 
-LengyelModelResults() = LengyelModelResults([0.0 for d in fieldnames(LengyelModelResults)]...)
+LengyelModelResults() = LengyelModelResults((0.0 for d in fieldnames(LengyelModelResults))...)
 
 mutable struct LengyelModel <: DivertorHeatFluxModel
     parameters::LengyelModelParameters
@@ -49,7 +49,7 @@ end
 """
 function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imp::Float64, imp::Union{String,Symbol}; N::Int64=500, ne::Float64=1e20, Zeff_exp::Float64=-0.3, Texp::Float64=0.5, Lexp::Float64=1.0, κ0=2390.0)
     data = ADAS.get_cooling_rates(imp)
-    zeff = ADAS.get_effective_charge(imp)
+    zeff = ADAS.get_Zeff(imp)
     Lz = data.Lztot
     T = collect(LinRange(Tmin, Tmax, N))
     int = [T_ .^ Texp .* zeff(f_imp, ne, T_) .^ (Zeff_exp) .* Lz(ne, T_) .^ Lexp for T_ in T]
@@ -57,7 +57,7 @@ function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imp::Float64, imp::Union{
 end
 
 function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imps::Vector{Float64}, imps::Vector{<:Union{String,Symbol}}; ne::Float64=1e20, Zeff_exp::Float64=-0.3, Texp::Float64=0.5, Lexp::Float64=1.0, κ0=2390.0, N::Int64=500)
-    zeff = ADAS.get_effective_charge(imps)
+    zeff = ADAS.get_Zeff(imps)
     T = collect(LinRange(Tmin, Tmax, N))
     int = 0.0
     for (f_imp, imp) in zip(f_imps, imps)
@@ -109,7 +109,7 @@ compute_qrad(p::LengyelModelParameters) = compute_qrad(p.sol, p.integral)
 compute_qrad(s::LengyelModelSOLParameters, i::LengyelIntegralParameters) = s.f_adhoc * s.n_up * s.T_up * V_legyel_ADAS(s, i)
 
 function compute_zeff_up(par::LengyelModelParameters)
-    zeff = ADAS.get_effective_charge(par.sol.imp)
+    zeff = ADAS.get_Zeff(par.sol.imp)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 

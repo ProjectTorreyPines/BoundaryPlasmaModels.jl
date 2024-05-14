@@ -124,7 +124,7 @@ Tup = 200.0
 fraction =10 .^ LinRange(-4:0.05:-1)
 
 for f in fraction
-    zeff = ADAS.get_effective_charge(imp);
+    zeff = ADAS.get_Zeff(imp);
     push!(zeffup,zeff(f,nu,Tup))
     push!(v,sqrt((nu*Tup*V_legyel__ADAS(0.0, Tup, f, imp))^2+qtarget^2)*1e-6*1.35e-3*(2*pi))
     push!(v2,sqrt((3*nu*Tup*V_legyel__ADAS(0.0, Tup, f, imp))^2+qtarget^2)*1e-6*1.35e-3*(2*pi))
@@ -162,7 +162,7 @@ Tup = 200.0
 fraction =collect(0.001:0.001:0.2)
 
 for f in fraction
-    zeff = ADAS.get_effective_charge(imp);
+    zeff = ADAS.get_Zeff(imp);
     push!(zeffup,zeff(f,nu,Tup))
     
 end
