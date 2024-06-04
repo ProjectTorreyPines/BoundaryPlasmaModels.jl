@@ -1,4 +1,4 @@
-module LengyelHeatFluxModel
+module StangebyHeatFluxModel
 import NumericalIntegration
 import SimulationParameters
 import ADAS
@@ -6,13 +6,13 @@ using IMAS
 using IMASDD
 using Format
 import ..DivertorHeatFluxModel
+import ..DivertorHeatFluxModelParameters
+export StangebyModelParameters, StangebyModel
 
 
-export LengyelModelParameters, LengyelModel
+include("Stangeby_parameters.jl")
 
-include("Lengyel_parameters.jl")
-
-mutable struct LengyelModelResults{T}
+mutable struct StangebyModelResults{T}
     q_poloidal_omp::T
     q_parallel_omp::T
     q_rad::T
@@ -26,27 +26,27 @@ mutable struct LengyelModelResults{T}
     f_perp_projection::T
 end
 
-function Base.show(io::IO, r::LengyelModelResults)
+function Base.show(io::IO, r::StangebyModelResults)
     for f in propertynames(r)
         println(io, "$f: $(getfield(r,f))")
     end
 end
 
-LengyelModelResults() = LengyelModelResults((0.0 for d in fieldnames(LengyelModelResults))...)
+StangebyModelResults() = StangebyModelResults((0.0 for d in fieldnames(StangebyModelResults))...)
 
-mutable struct LengyelModel <: DivertorHeatFluxModel
-    parameters::LengyelModelParameters
-    results::LengyelModelResults
+mutable struct StangebyModel <: DivertorHeatFluxModel
+    parameters::StangebyModelParameters
+    results::StangebyModelResults
 end
 
-LengyelModel() = LengyelModel(LengyelModelParameters{Float64}())
+StangebyModel() = StangebyModel(StangebyModelParameters{Float64}())
 
-function LengyelModel(par::LengyelModelParameters)
+function StangebyModel(par::StangebyModelParameters)
     SimulationParameters.setup_parameters!(par)
-    LengyelModel(par, LengyelModelResults())
+    StangebyModel(par, StangebyModelResults())
 end
 
-(model::LengyelModel)() = model.results = compute_lengyel_model(model.parameters)
+(model::StangebyModel)() = model.results = compute_Stangeby_model(model.parameters)
 
 """ Perform weighted cooling rate integral over specified temperature interval
 # Inputs:  Tmin   minimum temperature for integral (eV)
@@ -77,8 +77,8 @@ end
 
 V_legyel_ADAS(s, i) = V_legyel_ADAS(i.T_down, s.T_up, s.f_imp, s.imp; ne=s.n_up, Zeff_exp=i.Zeff_exp, Texp=i.Texp, Lexp=i.Lexp, κ0=i.κ0)
 
-function compute_lengyel_model(par::LengyelModelParameters)
-    r = LengyelModelResults()
+function compute_Stangeby_model(par::StangebyModelParameters)
+    r = StangebyModelResults()
     r.λ_target = par.sol.λ_omp * par.target.f_omp2target_expansion
     r.f_pol_projection = tan(par.target.α_sp)
     r.f_perp_projection = 1.0 / sin(par.target.θ_sp)
@@ -98,9 +98,9 @@ function compute_heat_channel_area(R::T, λ_q::T) where {T<:Float64}
     return 2π * R * λ_q
 end
 
-compute_q_parallel_omp(p::LengyelModelParameters) = compute_q_parallel_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp, p.plasma.Bpol_omp, p.plasma.Bt_omp)
+compute_q_parallel_omp(p::StangebyModelParameters) = compute_q_parallel_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp, p.plasma.Bpol_omp, p.plasma.Bt_omp)
 
-compute_q_poloidal_omp(p::LengyelModelParameters) = compute_q_poloidal_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp)
+compute_q_poloidal_omp(p::StangebyModelParameters) = compute_q_poloidal_omp(p.plasma.P_SOL, p.plasma.R_omp, p.sol.λ_omp)
 
 function compute_q_poloidal_omp(P_SOL::T, R::T, λ_q::T) where {T<:Float64}
     @assert (P_SOL >= 0.0)
@@ -112,16 +112,16 @@ function compute_q_parallel_omp(P_SOL::T, R::T, λ_q::T, Bpol::T, Bt::T) where {
     return P_SOL / compute_heat_channel_area(R, λ_q) / sin(atan(Bpol / Bt))
 end
 
-compute_qrad(p::LengyelModelParameters) = compute_qrad(p.sol, p.integral)
+compute_qrad(p::StangebyModelParameters) = compute_qrad(p.sol, p.integral)
 
-compute_qrad(s::LengyelModelSOLParameters, i::LengyelIntegralParameters) = s.f_adhoc * s.n_up * s.T_up * V_legyel_ADAS(s, i)
+compute_qrad(s::StangebyModelSOLParameters, i::StangebyIntegralParameters) = s.f_adhoc * s.n_up * s.T_up * V_legyel_ADAS(s, i)
 
-function compute_zeff_up(par::LengyelModelParameters)
+function compute_zeff_up(par::StangebyModelParameters)
     zeff = ADAS.get_Zeff(par.sol.imp)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 
-function show_summary(model::LengyelModel)
+function show_summary(model::StangebyModel)
     p = model.parameters
     r = model.results
     printfmtln("Upstream")
@@ -153,7 +153,7 @@ function show_summary(model::LengyelModel)
     end
     printfmtln("└─ {:<22} = {:.2f} ", "Zeff_up", r.zeff_up)
     printfmtln("")
-    printfmtln("Lengyel model output")
+    printfmtln("Stangeby model output")
     printfmtln("├─ {:<22} = {:.2f} MW/m^2", "q_poloidal_omp", r.q_poloidal_omp / 1e6)
     printfmtln("├─ {:<22} = {:.2f} MW/m^2", "q_parallel_omp", r.q_parallel_omp / 1e6)
     printfmtln("├─ {:<22} = {:.2f} MW/m^2 ", "q_rad", (r.q_rad) / 1e6)
@@ -162,8 +162,5 @@ function show_summary(model::LengyelModel)
     printfmtln("├─ {:<22} = {:.2f} MW/m^2 ", "q_perp_target", r.q_perp_target / 1e6)
     printfmtln("└─ {:<22} = {:.2f} MW/m^2 ", "q_perp_target_spread", r.q_perp_target_spread / 1e6)
 end
-
-
-
-include("Lengyel_from_dd.jl")
+include("Stangeby_from_dd.jl")
 end
