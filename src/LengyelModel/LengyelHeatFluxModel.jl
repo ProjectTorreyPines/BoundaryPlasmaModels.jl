@@ -6,7 +6,7 @@ using IMAS
 using IMASDD
 using Format
 import ..DivertorHeatFluxModel
-
+import ..DivertorHeatFluxModelParameters
 
 export LengyelModelParameters, LengyelModel
 
@@ -121,7 +121,7 @@ function compute_zeff_up(par::LengyelModelParameters)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 
-function show_summary(model::LengyelModel)
+function Base.summary(model::LengyelModel)
     p = model.parameters
     r = model.results
     printfmtln("Upstream")
