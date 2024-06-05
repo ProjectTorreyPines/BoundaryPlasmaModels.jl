@@ -6,7 +6,7 @@ FUSE.init(dd, ini, act; do_plot=false);
 #switch model
 act.ActorDivertors.heat_flux_model.model = :stangeby
 # check that parameters have switched Toroidal
-act.ActorDivertors.heat_flux_model
+act.ActorDivertors.heat_flux_model.setup isa FUSE.BoundaryPlasmaModels.StangebyModelParameters
 
 actor = FUSE.ActorDivertors(dd, act);
 summary(actor.boundary_plasma_models[1])
