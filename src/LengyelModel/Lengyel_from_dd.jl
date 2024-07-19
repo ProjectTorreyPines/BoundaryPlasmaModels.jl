@@ -78,6 +78,8 @@ function setup_model(
     boundary_plasma_model.parameters.target.θ_sp = sol1.strike_angles[strike_index1 == 1 ? 1 : 2] # [CURRENTLY NOT USED]
 end
 
+export setup_model
+
 # questions:
 # NO R_target ?
 # Heat flux treated not as exponential decay

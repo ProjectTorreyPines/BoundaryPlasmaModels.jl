@@ -113,6 +113,11 @@ function compute_zeff_up(par::LengyelModelParameters)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 
+"""
+    show_summary(model::LengyelModel)
+
+Print summary of LengyelModel setup and simulation results
+"""
 function show_summary(model::LengyelModel)
     p = model.parameters
     r = model.results
