@@ -1,7 +1,6 @@
 import FuseUtils
 import SimulationParameters
 import ADAS
-import IMASDD
 using Formatting
 
 mutable struct LengyelModelResults{T}
