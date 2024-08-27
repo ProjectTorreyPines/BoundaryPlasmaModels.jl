@@ -4,7 +4,9 @@ using SimulationParameters: AbstractParameters, Entry, Switch
 
 abstract type DivertorHeatFluxModel end
 abstract type DivertorHeatFluxModelParameters{T} <: AbstractParameters{T} end
+
 include("StangebyModel/StangebyHeatFluxModel.jl")
+
 include("LengyelModel/LengyelHeatFluxModel.jl")
 
 using .StangebyHeatFluxModel
@@ -56,5 +58,8 @@ end
 setup_model(model::LengyelModel, args...; kw...) = LengyelHeatFluxModel.setup_model(model, args...; kw...)
 setup_model(model::StangebyModel, args...; kw...) = StangebyHeatFluxModel.setup_model(model, args...; kw...)
 
+
+const document = Dict()
+document[Symbol(@__MODULE__)] = [name for name in Base.names(@__MODULE__, all=false, imported=false) if name != Symbol(@__MODULE__)]
 
 end

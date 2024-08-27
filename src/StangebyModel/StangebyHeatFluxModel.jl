@@ -1,15 +1,13 @@
 module StangebyHeatFluxModel
-import NumericalIntegration
 import SimulationParameters
 import ADAS
 using IMAS
-using IMASDD
 using Format
 using NLsolve
 import ..DivertorHeatFluxModel
 import ..DivertorHeatFluxModelParameters
-export StangebyModelParameters, StangebyModel
 
+export StangebyModelParameters, StangebyModel
 
 include("Stangeby_parameters.jl")
 
@@ -118,6 +116,11 @@ function compute_zeff_up(par::StangebyModelParameters)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 
+"""
+    summary(model::StangebyModel)
+
+Print summary of StangebyModel setup and simulation results
+"""
 function Base.summary(model::StangebyModel)
     p = model.parameters
     r = model.results
