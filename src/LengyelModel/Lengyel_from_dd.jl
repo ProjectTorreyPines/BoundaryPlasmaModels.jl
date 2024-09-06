@@ -50,6 +50,9 @@ function setup_model(
     boundary_plasma_model.parameters.target.α_sp = @ddtime(target.tilt_angle_tor.data)
     return boundary_plasma_model.parameters.target.θ_sp = @ddtime(target.tilt_angle_pol.data)
 end
+
+export setup_model
+
 # questions:
 # NO R_target ?
 # Heat flux treated not as exponential decay

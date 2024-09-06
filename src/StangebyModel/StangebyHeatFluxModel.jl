@@ -1,14 +1,13 @@
 module StangebyHeatFluxModel
-import NumericalIntegration
 import SimulationParameters
 import ADAS
 using IMAS
-using IMASDD
 using Format
+using NLsolve
 import ..DivertorHeatFluxModel
 import ..DivertorHeatFluxModelParameters
-export StangebyModelParameters, StangebyModel
 
+export StangebyModelParameters, StangebyModel
 
 include("Stangeby_parameters.jl")
 
@@ -20,10 +19,10 @@ mutable struct StangebyModelResults{T}
     q_parallel_target_projected::T
     q_perp_target::T
     q_perp_target_spread::T
-    zeff_up::T
     λ_target::T
     f_pol_projection::T
     f_perp_projection::T
+    T_target::T
 end
 
 function Base.show(io::IO, r::StangebyModelResults)
@@ -48,35 +47,6 @@ end
 
 (model::StangebyModel)() = model.results = compute_Stangeby_model(model.parameters)
 
-""" Perform weighted cooling rate integral over specified temperature interval
-# Inputs:  Tmin   minimum temperature for integral (eV)
-#          Tmax   maximum temperature for integral (eV)
-#          Texp   Exponent for temperature weighting
-#          Lexp   Exponent for cooling rate weighting
-#          Zimp   Z of impurity (Ar: 18; Kr: 36; Xe: 54)
-"""
-function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imp::Float64, imp::Union{String,Symbol}; N::Int64=500, ne::Float64=1e20, Zeff_exp::Float64=-0.3, Texp::Float64=0.5, Lexp::Float64=1.0, κ0=2390.0)
-    data = ADAS.get_cooling_rates(imp)
-    zeff = ADAS.get_Zeff(imp)
-    Lz = data.Lztot
-    T = collect(LinRange(Tmin, Tmax, N))
-    int = [T_ .^ Texp .* zeff(f_imp, ne, T_) .^ (Zeff_exp) .* Lz(ne, T_) .^ Lexp for T_ in T]
-    return sqrt.(NumericalIntegration.integrate(T, int) * f_imp * κ0 * 2)
-end
-
-function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imps::Vector{Float64}, imps::Vector{<:Union{String,Symbol}}; ne::Float64=1e20, Zeff_exp::Float64=-0.3, Texp::Float64=0.5, Lexp::Float64=1.0, κ0=2390.0, N::Int64=500)
-    zeff = ADAS.get_Zeff(imps)
-    T = collect(LinRange(Tmin, Tmax, N))
-    int = 0.0
-    for (f_imp, imp) in zip(f_imps, imps)
-        data = ADAS.get_cooling_rates(imp)
-        int += sqrt.(NumericalIntegration.integrate(T, [T_ .^ Texp .* zeff(f_imps, ne, T_) .^ (Zeff_exp) .* data.Lztot(ne, T_) .^ Lexp for T_ in T]) * f_imp * κ0 * 2.0)
-    end
-    return int
-end
-
-V_legyel_ADAS(s, i) = V_legyel_ADAS(i.T_down, s.T_up, s.f_imp, s.imp; ne=s.n_up, Zeff_exp=i.Zeff_exp, Texp=i.Texp, Lexp=i.Lexp, κ0=i.κ0)
-
 function compute_Stangeby_model(par::StangebyModelParameters)
     r = StangebyModelResults()
     r.λ_target = par.sol.λ_omp * par.target.f_omp2target_expansion
@@ -84,12 +54,11 @@ function compute_Stangeby_model(par::StangebyModelParameters)
     r.f_perp_projection = 1.0 / sin(par.target.θ_sp)
     r.q_poloidal_omp = compute_q_poloidal_omp(par)
     r.q_parallel_omp = compute_q_parallel_omp(par)
-    r.q_rad = compute_qrad(par)
+    r.q_rad = compute_qrad(par, r)
     r.q_parallel_target_unprojected = sqrt(max(0.0, r.q_parallel_omp^2.0 - r.q_rad^2.0))
     r.q_parallel_target_projected = r.q_parallel_target_unprojected / par.target.f_omp2target_expansion * (par.plasma.R_omp  / par.target.R)
     r.q_perp_target = r.q_parallel_target_projected * r.f_pol_projection
     r.q_perp_target_spread = r.q_perp_target / par.target.f_spread_pfr
-    r.zeff_up = compute_zeff_up(par)
     return r
 end
 
@@ -112,22 +81,52 @@ function compute_q_parallel_omp(P_SOL::T, R::T, λ_q::T, Bpol::T, Bt::T) where {
     return P_SOL / compute_heat_channel_area(R, λ_q) / sin(atan(Bpol / Bt))
 end
 
-compute_qrad(p::StangebyModelParameters) = compute_qrad(p.sol, p.integral)
 
-compute_qrad(s::StangebyModelSOLParameters, i::StangebyIntegralParameters) = s.f_adhoc * s.n_up * s.T_up * V_legyel_ADAS(s, i)
+
+
+
+
+function get_Te_target(Tᵤ, q_parallel_omp, L_para, f_cond, κ_0; Te_init=10.0)
+    G(Tₑₜ) = @. abs(Tᵤ)^(7 / 2) - (abs(Tₑₜ[1])^(7 / 2) + 7 / 2 * q_parallel_omp * L_para * f_cond / κ_0 / (1.0 - fcool(Tₑₜ[1])))
+    sol = nlsolve(G, [Te_init])
+    return sol.zero[1]
+end
+
+# from https://doi.org/10.1088/1361-6587/ad2b90 (J. H. Nichols et al 2024 Plasma Phys. Control. Fusion 66 045013)
+a = [-1.171, 2.101, -3.212, 3.567, -1.477]
+_fcool(T) = 1.0 - 10^(sum([a_ * (log10(T))^(i - 1) for (i, a_) in enumerate(a)]))
+function fcool(T) 
+     if T > 10.0 
+    return  1.0 - _fcool(10.0) 
+elseif T < 0.0
+    return 0.0
+else 
+    return 1.0 - _fcool(T)
+end
+end
+
+function compute_qrad(p::StangebyModelParameters, r ; Te_init=10.0) 
+    r.T_target = get_Te_target(p.sol.T_up, r.q_parallel_omp, p.target.L_para, p.integral.f_cond, p.integral.κ0; Te_init)
+    return (1 - fcool(r.T_target)) * r.q_parallel_omp
+end
+
 
 function compute_zeff_up(par::StangebyModelParameters)
     zeff = ADAS.get_Zeff(par.sol.imp)
     return zeff(par.sol.f_imp, par.sol.n_up, par.sol.T_up)
 end
 
-function show_summary(model::StangebyModel)
+"""
+    summary(model::StangebyModel)
+
+Print summary of StangebyModel setup and simulation results
+"""
+function Base.summary(model::StangebyModel)
     p = model.parameters
     r = model.results
     printfmtln("Upstream")
     printfmtln("├─ {:<22} = {:.2f} MW", "P_SOL", p.plasma.P_SOL / 1e6)
     printfmtln("├─ {:<22} = {:.2f} eV", "Te_up", p.sol.T_up)
-    printfmtln("├─ {:<22} = {:.2e} m⁻³", "ne_up", p.sol.n_up)
     printfmtln("├─ {:<22} = {:.1f} T", "Bp_omp", p.plasma.Bpol_omp)
     printfmtln("├─ {:<22} = {:.1f} T", "Bt_omp", p.plasma.Bt_omp)
     printfmtln("├─ {:<22} = {:.1f} m", "R_omp", p.plasma.R_omp)
@@ -146,12 +145,6 @@ function show_summary(model::StangebyModel)
     printfmtln("")
     printfmtln("Transport")
     printfmtln("└─ {:<22} = {:.1f}", "spread_pfr", p.target.f_spread_pfr)
-    printfmtln("")
-    printfmtln("Impurities")
-    for (i, f) in zip(p.sol.imp, p.sol.f_imp)
-        printfmtln("├─ {:<22} = {:3.3f}%  ", string(i), f * 100)
-    end
-    printfmtln("└─ {:<22} = {:.2f} ", "Zeff_up", r.zeff_up)
     printfmtln("")
     printfmtln("Stangeby model output")
     printfmtln("├─ {:<22} = {:.2f} MW/m^2", "q_poloidal_omp", r.q_poloidal_omp / 1e6)

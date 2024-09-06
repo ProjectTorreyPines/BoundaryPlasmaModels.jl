@@ -1,26 +1,26 @@
-function Lint_ADAS(Tmin, Tmax,Texp,Lexp, Zimp; N = 100)
-# Perform weighted cooling rate integral over specified temperature interval
-# Inputs:  Tmin   minimum temperature for integral (eV)
-#          Tmax   maximum temperature for integral (eV)
-#          Texp   Exponent for temperature weighting
-#          Lexp   Exponent for cooling rate weighting
-#          Zimp   Z of impurity (Ar: 18; Kr: 36; Xe: 54)
+using Interpolations
 
-   
-    adas_data = load_adas_cooling_rates(Zimp)
-        
-    dT = LinRange(Tmin,Tmax,N)
-    Lz = np.interp(Te,adasdata[Zimp]['temp'],adasdata[Zimp]['Lztot'])
-    return np.trapz((Te^Texp)*(Lz^Lexp),Te) *1.e-6
-end
+# function Lint_ADAS(Tmin, Tmax,Texp,Lexp, Zimp; N = 100)
+# # Perform weighted cooling rate integral over specified temperature interval
+# # Inputs:  Tmin   minimum temperature for integral (eV)
+# #          Tmax   maximum temperature for integral (eV)
+# #          Texp   Exponent for temperature weighting
+# #          Lexp   Exponent for cooling rate weighting
+# #          Zimp   Z of impurity (Ar: 18; Kr: 36; Xe: 54)
+
+
+#     adas_data = load_adas_cooling_rates(Zimp)
+
+#     dT = LinRange(Tmin,Tmax,N)
+#     Lz = np.interp(Te,adasdata[Zimp]['temp'],adasdata[Zimp]['Lztot'])
+#     return np.trapz((Te^Texp)*(Lz^Lexp),Te) *1.e-6
+# end
 
 
 
 get_cooling_rates(;database=:ADPAK)
 
 get_adas_cooling_rates(imp::Symbol)
-
-
 
 
 """
@@ -32,8 +32,7 @@ get_adas_cooling_rates(imp::Symbol)
 
     OUTPUTS:
     neTau, # array, non-equilibrium parameter ne * tau [m^-3.s^-1]
-    """
-    using Interpolations
+"""
 function Kallenbach_neTau(Te)
     Temodel = 10.0 .^ (collect(1:60)./10.0 .- 1)
     neTau_model = Temodel*0.
@@ -45,7 +44,8 @@ function Kallenbach_neTau(Te)
     interp_linear = Interpolations.linear_interpolation(Temodel, neTau_model)
     return interp_linear(Te)
 end
-""" 
+
+"""
 Perform weighted cooling rate integral over specified temperature interval
 # Inputs:  Tmin   minimum temperature for integral (eV)
 #          Tmax   maximum temperature for integral (eV)
@@ -53,17 +53,13 @@ Perform weighted cooling rate integral over specified temperature interval
 #          Lexp   Exponent for cooling rate weighting
 #          Zimp   Z of impurity (Ar: 18; Kr: 36; Xe: 54)
 """
-
 function Lint(Tmin, Tmax,Texp,Lexp, imp::Symbol; N=101, cooling_rate_data=get_cooling_rates())
-
     Te = Tedata
     Lz = Lzdata*1.e-6
     T = LinRange(Tmin,Tmax,N)
     Lz_ = Interpolations.linear_interpolation(Te,Lz)
-    return NumericalIntegration.integrate(T,T .^ Texp .* Lz_(T).^ Lexp)
+    return FuseUtils.trapz(T,T .^ Texp .* Lz_(T).^ Lexp)
 end
-    
-
 
 using Plots
 fraction =collect(0.01:0.01:0.05)
@@ -135,16 +131,16 @@ plot!(v2,zeffup; label=nothing,linewidth = 3.0, linestyle=:dash, color = colors[
 end
 plot!([1], [0], label = "Lengyel model: GASC", color = "black")
 plot!([1], [0], linestyle = :dash, label = "Lengyel model: 1D/2D informed", color = "black")
-plot!(xlabel=L"$P_{SOL} B_θ / R_{omp}#$", 
-ylabel = L"$Z_{eff}#$ at separatrix upstream", 
-legend_position=:outertop, 
-frame=true,xlim=[1,25], 
-ylim=[1.0,5.0], 
+plot!(xlabel=L"$P_{SOL} B_θ / R_{omp}#$",
+ylabel = L"$Z_{eff}#$ at separatrix upstream",
+legend_position=:outertop,
+frame=true,xlim=[1,25],
+ylim=[1.0,5.0],
 aspect_ratio = (24)/(4),
-xlabelfontsize=20, 
-ylabelfontsize=20, 
-size=(600,600), 
-legendfontsize=12, 
+xlabelfontsize=20,
+ylabelfontsize=20,
+size=(600,600),
+legendfontsize=12,
 legend_columns=1,
 xtickfontsize=15,
 ytickfontsize=15
@@ -164,7 +160,7 @@ fraction =collect(0.001:0.001:0.2)
 for f in fraction
     zeff = ADAS.get_Zeff(imp);
     push!(zeffup,zeff(f,nu,Tup))
-    
+
 end
 
 plot!(v,zeffup; linestyle=:dash ,label="$imp [Moulton2021]" )
