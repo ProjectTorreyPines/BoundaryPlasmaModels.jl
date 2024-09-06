@@ -1,5 +1,7 @@
 
 using FUSE
+
+
 ini, act = FUSE.case_parameters(:FPP);
 dd = IMAS.dd()#
 FUSE.init(dd, ini, act; do_plot=false);
@@ -9,7 +11,7 @@ act.ActorDivertors.heat_flux_model.model = :stangeby
 act.ActorDivertors.heat_flux_model.setup isa FUSE.BoundaryPlasmaModels.StangebyModelParameters
 
 actor = FUSE.ActorDivertors(dd, act);
-summary(actor.boundary_plasma_models[1])
+
 #FUSE.ActorCXbuild(dd, act; do_plot=true, rebuild_wall=true);
 
 #CATDEMO
