@@ -19,13 +19,15 @@
 """
 function setup_model(
     boundary_plasma_model::StangebyModel,
-    target::IMAS.divertors__divertor___target,
     eqt::IMAS.equilibrium__time_slice,
     cp1d::IMAS.core_profiles__profiles_1d,
-    sol1::IMAS.OpenFieldLine;
-    impurities::Vector{Symbol},
-    impurities_fraction::Vector{<:Real},
-    heat_spread_factor::Real=1.0)
+    sol::Vector{IMAS.OpenFieldLine},
+    P_SOL::Real,
+    λ_omp::Real;
+    strike_index::Int,
+    imp::Vector{Symbol},
+    f_imp::Vector{<:Real},
+    f_spread_pfr::Real=1.0)
 
     @assert (length(impurities) == length(impurities_fraction))
 
