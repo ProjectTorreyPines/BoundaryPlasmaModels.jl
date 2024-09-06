@@ -1,19 +1,3 @@
-function setup_model(
-    boundary_plasma_model::LengyelModel,
-    dd::IMAS.dd;
-    imp::Vector{Symbol}=[:Ne],
-    f_imp::Vector{<:Real}=[0.02],
-    f_spread_pfr::Real=1.0)
-
-    eqt = dd.equilibrium.time_slice[]
-    cp1d = dd.core_profiles.profiles_1d[]
-
-    hfs_sol, lfs_sol = IMAS.sol(eqt, dd.wall, levels=2)
-    P_SOL = IMAS.power_sol(dd.core_sources, cp1d)
-    λ_omp = IMAS.widthSOL_eich(eqt, cp1d, dd.core_sources)
-
-    setup_model(boundary_plasma_model, eqt, cp1d, lfs_sol, P_SOL, λ_omp; strike_index=0, imp, f_imp, f_spread_pfr)
-end
 
 """
     setup_model(
@@ -34,7 +18,7 @@ end
 * anything else: strike point at the `end` location in the `sol` OpenFieldLine
 """
 function setup_model(
-    boundary_plasma_model::BoundaryPlasmaModels.LengyelModel,
+    boundary_plasma_model::LengyelModel,
     target::IMAS.divertors__divertor___target,
     eqt::IMAS.equilibrium__time_slice,
     cp1d::IMAS.core_profiles__profiles_1d,
