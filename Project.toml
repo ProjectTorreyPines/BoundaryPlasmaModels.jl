@@ -5,7 +5,7 @@ version = "1.0.1"
 
 [deps]
 ADAS = "f4a0d185-1024-41e7-8ef7-3196bb2f6549"
-Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
+Format = "1fa38f19-a742-5d3f-a2b9-30dd87b9d5f8"
 FuseUtils = "c8e4ee58-0bec-4a6a-b552-9dd24d6374ac"
 IMAS = "13ead8c1-b7d1-41bb-a6d0-5b8b65ed587a"
 MillerExtendedHarmonic = "c82744c2-dc08-461a-8c37-87ab04d0f9b8"
@@ -13,7 +13,6 @@ SimulationParameters = "32ab26d3-25d6-405d-a295-367385e16093"
 
 [compat]
 ADAS = "1"
-Formatting = "0.4.3"
 FuseUtils = "1"
 IMAS = "1"
 MillerExtendedHarmonic = "1"

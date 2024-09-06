@@ -43,7 +43,8 @@ Base.@kwdef mutable struct LengyelIntegralParameters{T<:Real} <: AbstractParamet
     κ0::Entry{T} = Entry{T}("W⋅m/eV^3.5", "Heat conductivity"; default=2390.0)
 end
 
-Base.@kwdef mutable struct LengyelModelParameters{T<:Real} <: AbstractParameters{T}
+
+Base.@kwdef mutable struct LengyelModelParameters{T<:Real} <:DivertorHeatFluxModelParameters{T}
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :LengyelModelParameters
     sol::LengyelModelSOLParameters{T} = LengyelModelSOLParameters{T}()
@@ -51,3 +52,5 @@ Base.@kwdef mutable struct LengyelModelParameters{T<:Real} <: AbstractParameters
     target::LengyelModelTargetParameters{T} = LengyelModelTargetParameters{T}()
     integral::LengyelIntegralParameters{T} = LengyelIntegralParameters{T}()
 end
+
+Base.convert(::Type{DivertorHeatFluxModelParameters{Float64}}, t::T) where {T<:DivertorHeatFluxModelParameters} = t
