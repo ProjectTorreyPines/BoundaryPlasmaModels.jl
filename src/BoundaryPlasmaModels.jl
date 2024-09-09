@@ -33,15 +33,15 @@ function Base.setproperty!(par::DivertorHeatFluxParameters{T},prop::Symbol, v) w
     end
 end
 # --- entry point --- #
-# function DivertorHeatFluxModel(model::Symbol)
-#     if model == :lengyel
-#         return LengyelModel()
-#     elseif model == :stangeby
-#         return StangebyModel()
-#     else
-#         error("Divertor heat flux model `$model` is not recognized")
-#     end
-# end
+function DivertorHeatFluxModel(model::Symbol)
+    if model == :lengyel
+        return LengyelModel()
+    elseif model == :stangeby
+        return StangebyModel()
+    else
+        error("Divertor heat flux model `$model` is not recognized")
+    end
+end
 
 DivertorHeatFluxModel(par::DivertorHeatFluxParameters) = DivertorHeatFluxModel(par.model, par.setup)
 
