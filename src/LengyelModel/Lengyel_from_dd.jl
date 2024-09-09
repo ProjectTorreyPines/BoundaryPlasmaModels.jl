@@ -48,8 +48,9 @@ function setup_model(
     boundary_plasma_model.parameters.target.R = @ddtime(target.wetted_area.data) / (λ_target * 2π)
     boundary_plasma_model.parameters.target.f_spread_pfr = heat_spread_factor
     boundary_plasma_model.parameters.target.α_sp = @ddtime(target.tilt_angle_tor.data)
-    return boundary_plasma_model.parameters.target.θ_sp = @ddtime(target.tilt_angle_pol.data)
+    boundary_plasma_model.parameters.target.θ_sp = @ddtime(target.tilt_angle_pol.data)
 end
+
 
 export setup_model
 
