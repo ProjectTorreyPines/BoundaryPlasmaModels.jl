@@ -15,7 +15,9 @@ actor = FUSE.ActorDivertors(dd, act);
 #FUSE.ActorCXbuild(dd, act; do_plot=true, rebuild_wall=true);
 
 #CATDEMO
-dd, ini, act = FUSE.init(:CAT);
+ini, act = FUSE.case_parameters(:CAT)
+dd = IMAS.dd()
+FUSE.init(dd, ini, act)
 act.ActorDivertors.setup.lengyel.sol.f_imp = [0.02]
 act.ActorDivertorHeatFlux.setup.lengyel.sol.imp = [:Ne]
 actor = FUSE.ActorDivertorHeatFlux(dd, act);
