@@ -18,7 +18,7 @@ end
 
 makedocs(;
     modules=[BoundaryPlasmaModels],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(;analytics="G-65D8V8C8VQ"),
     sitename="BoundaryPlasmaModels",
     checkdocs=:none,
     pages=["index.md", "api.md", "License" => "license.md", "Notice" => "notice.md"]
