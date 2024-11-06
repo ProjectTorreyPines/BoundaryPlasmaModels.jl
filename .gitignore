@@ -35,3 +35,4 @@ Manifest.toml
 # temp/test files
 test.json
 asd.jl
+.DS_Store
