@@ -58,7 +58,7 @@ function Lint(Tmin, Tmax,Texp,Lexp, imp::Symbol; N=101, cooling_rate_data=get_co
     Lz = Lzdata*1.e-6
     T = LinRange(Tmin,Tmax,N)
     Lz_ = Interpolations.linear_interpolation(Te,Lz)
-    return FuseUtils.trapz(T,T .^ Texp .* Lz_(T).^ Lexp)
+    return IMASutils.trapz(T,T .^ Texp .* Lz_(T).^ Lexp)
 end
 
 using Plots

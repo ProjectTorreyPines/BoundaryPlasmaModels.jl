@@ -59,7 +59,7 @@ function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imp::Float64, imp::Union{
     Lz = data.Lztot
     T = collect(LinRange(Tmin, Tmax, N))
     int = [T_ .^ Texp .* zeff(f_imp, ne, T_) .^ (Zeff_exp) .* Lz(ne, T_) .^ Lexp for T_ in T]
-    return sqrt.(FuseUtils.trapz(T, int) * f_imp * κ0 * 2)
+    return sqrt.(IMASutils.trapz(T, int) * f_imp * κ0 * 2)
 end
 
 function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imps::Vector{Float64}, imps::Vector{<:Union{String,Symbol}}; ne::Float64=1e20, Zeff_exp::Float64=-0.3, Texp::Float64=0.5, Lexp::Float64=1.0, κ0=2390.0, N::Int64=500)
@@ -68,7 +68,7 @@ function V_legyel_ADAS(Tmin::Float64, Tmax::Float64, f_imps::Vector{Float64}, im
     int = 0.0
     for (f_imp, imp) in zip(f_imps, imps)
         data = ADAS.get_cooling_rates(imp)
-        int += sqrt.(FuseUtils.trapz(T, [T_ .^ Texp .* zeff(f_imps, ne, T_) .^ (Zeff_exp) .* data.Lztot(ne, T_) .^ Lexp for T_ in T]) * f_imp * κ0 * 2.0)
+        int += sqrt.(IMASutils.trapz(T, [T_ .^ Texp .* zeff(f_imps, ne, T_) .^ (Zeff_exp) .* data.Lztot(ne, T_) .^ Lexp for T_ in T]) * f_imp * κ0 * 2.0)
     end
     return int
 end
