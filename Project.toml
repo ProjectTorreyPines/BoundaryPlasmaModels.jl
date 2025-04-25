@@ -15,7 +15,7 @@ NumericalIntegration = "e7bfaba1-d571-5449-8927-abc22e82249b"
 SimulationParameters = "32ab26d3-25d6-405d-a295-367385e16093"
 
 [compat]
-ADAS = "1"
+ADAS = "1, 2"
 Format = "1"
 IMAS = "1, 2, 3, 4, 5"
 IMASutils = "1"
