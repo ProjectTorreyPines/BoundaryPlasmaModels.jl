@@ -35,7 +35,7 @@ vline!([0.006]; color=:green, linewidth=2, label="ITER monoblock design [Bonin]"
 vline!([0.008]; color=:green, linewidth=2, label="ITER monoblock design [Morshedy]")
 
 hline!([0.08e6]; color=:green, linewidth=2, linestyle=:dash, label="water at Q= 10 MW.m^{-2}[Morshedy]")
-plot!(; legend_position=legend_position = :outertop)
+plot!(; legend_position = :outertop)
 plot!(title=L"ITER cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 plot!(titlefontsize=10)
 
@@ -61,7 +61,7 @@ vline!([0.006]; color=:green, linewidth=2, label="ITER monoblock design [Bonin]"
 vline!([0.008]; color=:green, linewidth=2, label="ITER monoblock design [Morshedy]")
 
 hline!([0.08e6]; color=:green, linewidth=2, linestyle=:dash, label="water at Q= 10 MW.m^{-2}[Morshedy]")
-plot!(; legend_position=legend_position = :outertop)
+plot!(; legend_position = :outertop)
 plot!(title=L"ITER cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 plot!(titlefontsize=10)
 
@@ -92,7 +92,7 @@ vline!([0.008]; color=:green, linewidth=2, label="ITER monoblock design [Morshed
 hline!([0.026e6]; label="He: smooth Cu tube[Baxi]")
 hline!([0.04e6]; label="He: jet Cu tube [Baxi]")
 hline!([0.05e6]; label="He: jet flow []")
-plot!(; legend_position=legend_position = :outertop)
+plot!(; legend_position = :outertop)
 plot!(title=L"He cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 
 plot!(titlefontsize=10)
@@ -120,7 +120,7 @@ vline!([0.008]; color=:green, linewidth=2, label="ITER monoblock design [Morshed
 hline!([0.026e6]; label="He: smooth Cu tube[Baxi]")
 hline!([0.04e6]; label="He: jet Cu tube [Baxi]")
 hline!([0.05e6]; label="He: jet flow []")
-plot!(; legend_position=legend_position = :outertop)
+plot!(; legend_position = :outertop)
 plot!(title=L"He cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 
 plot!(titlefontsize=10)
@@ -157,7 +157,7 @@ hline!([0.026e6]; linewidth=2, label="He: smooth Cu tube[Baxi]")
 # hline!([0.04e6];linewidth=2,label="He: jet Cu tube [Baxi]")
 hline!([0.05e6]; linewidth=2, label="He: jet flow []")
 hline!([0.08e6]; color=:blue, linestyle=:dot, linewidth=2, label="Water: ITER")
-plot!(; legend_position=legend_position = :outertop)
+plot!(; legend_position = :outertop)
 plot!(title=L"He cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 
 plot!(titlefontsize=10, ylabelfontsize=15, xlabelfontsize=15, size=(500, 500))
@@ -188,7 +188,7 @@ hline!([0.026e6]; linewidth=5, label="He: smooth Cu tube[Baxi]")
 # hline!([0.04e6];linewidth=2,label="He: jet Cu tube [Baxi]")
 hline!([0.05e6]; linewidth=5, label="He: jet flow []")
 hline!([0.08e6]; color=:blue, linewidth=5, linestyle=:dot, label="Water: ITER")
-plot!(; legend=nothing, legend_position=legend_position = :outertop)
+plot!(; legend=nothing, legend_position = :outertop)
 plot!(title=L"He cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 
 plot!(titlefontsize=10, ylabelfontsize=15, xlabelfontsize=20, size=(600, 600))
@@ -217,7 +217,7 @@ hline!([0.026e6]; linewidth=5, label="He: smooth Cu tube[Baxi]")
 # hline!([0.04e6];linewidth=2,label="He: jet Cu tube [Baxi]")
 hline!([0.05e6]; linewidth=5, label="He: jet flow []")
 hline!([0.08e6]; color=:blue, linewidth=5, linestyle=:dot, label="Water: ITER")
-plot!(; legend=nothing, legend_position=legend_position = :outertop)
+plot!(; legend=nothing, legend_position = :outertop)
 plot!(title=L"He cooling: Q_{target} = %$(q/1e6) MW; $T_{inlet}$ = %$(T_inlet) K, $f_{circular}$ = %$(f_circular)")
 
 plot!(titlefontsize=10, ylabelfontsize=15, xlabelfontsize=20, size=(600, 600))
