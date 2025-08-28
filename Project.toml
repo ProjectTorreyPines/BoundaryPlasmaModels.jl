@@ -17,7 +17,7 @@ SimulationParameters = "32ab26d3-25d6-405d-a295-367385e16093"
 [compat]
 ADAS = "1, 2"
 Format = "1"
-IMAS = "1, 2, 3, 4, 5"
+IMAS = "1, 2, 3, 4, 5, 6"
 IMASutils = "1"
 Interpolations = "0.15, 0.16"
 JSON = "0.21"
