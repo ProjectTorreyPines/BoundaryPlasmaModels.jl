@@ -11,10 +11,8 @@
       heat_spread_factor::Real=1.0)
 
 `strike_index` selects the strike point to USED
-
-  - 0: automatic strike point selection favoring the outermost strike point
-  - 1: strike point at the 1st location in the `sol` OpenFieldLine
-  - anything else: strike point at the `end` location in the `sol` OpenFieldLine
+* 1: strike point at the 1st location in the `sol` OpenFieldLine
+* 2: strike point at the `end` location in the `sol` OpenFieldLine
 """
 function setup_model(
   boundary_plasma_model::StangebyModel,
