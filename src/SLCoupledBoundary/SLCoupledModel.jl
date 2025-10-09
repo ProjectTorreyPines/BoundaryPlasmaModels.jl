@@ -70,11 +70,14 @@ include("SLCoupled_from_dd.jl")
 # ---------------------------
 
 @inline function f_from_poly_Te(Te_t::Number, coeffs::NTuple{5,<:Real})
-    ξ = log10(Te_t)
+    # Cap Te_t at 10.0
+    Te_eff = clamp(Te_t, oftype(Te_t, 0.1), oftype(Te_t, 10.0))
+    ξ = log10(Te_eff)
     y = coeffs[1] + coeffs[2]*ξ + coeffs[3]*ξ^2 + coeffs[4]*ξ^3 + coeffs[5]*ξ^4
     T10 = oftype(Te_t, 10.0)                  #
-    f = one(Te_t) - (T10^y)                   
-    return clamp(f, zero(Te_t), one(Te_t))
+    f = one(Te_t) - (T10^y)                  
+    ϵ = oftype(Te_t, 1e-6)
+    return clamp(f, ϵ, one(Te_t) - ϵ)
 end
 
 @inline γ_sh(τt::Number) = 5.69 + 3.0*τt + 0.5*log1p(τt)
@@ -143,67 +146,7 @@ function _LINT_adas_sum(Tmin::Float64, Tmax::Float64,
     return Δ * (0.5 * vals[1] + sum(@view vals[2:end-1]) + 0.5 * vals[end])
 end
 
-# =============== Residuals (R1, R2, R3) for optimization ===============
-"""
-Residual system using your three equations:
-
-R1: (sheath heat flux * Rt) - ((1 - fcool(Te_t)) * q_leg * Ru) = 0
-R2: nt*Tt*(1+τt)*(1+Mt^2) - nu*Tu*(1+τu)*(1+Mu^2)*(1 - fmom(Te_t)) = 0
-R3: Tu^(7/2) - Tt^(7/2) - (7/2)*(Rt/Ru)*[ q_leg * f_cond * L_par ] / [ k_e * (1 - fcool(Te_t)) ] = 0
-
-Here q_leg = P_SOL / (2π Ru λ_q sinθ), with sinθ = Bp / sqrt(Bp^2 + Bt^2).
-"""
-function residuals_vec(x; mode::Symbol, m::SLCoupledModel, do_print::Bool=false)
-    x = abs.(x)
-    x[3] = IMAS.mirror_bound(x[3], 0.0, 1.0)
-
-    p = m.parameters
-
-    τt, τu = p.coupling.tau_t, p.coupling.tau_u
-    mi     = p.coupling.mi_amu
-    Ru, Rt = p.plasma.R_omp, p.target.R_strike
-    λq     = p.sol.λ_omp
-    Bp, Bt = p.plasma.Bpol_omp, p.plasma.Bt_omp
-    Lpar   = p.target.L_para
-    ke     = p.coupling.kappa_e
-    fcond  = p.coupling.f_cond
-    Mt, Mu = p.coupling.M_t, p.coupling.M_u
-
-    sθ   = sin_pitch(Bp, Bt)
-    qleg = p.plasma.P_SOL / (2π * Ru * λq * sθ)   # [W/m^2] at OMP
-
-    if mode === :target_known
-        # unknowns: [Tu, nu, fc]; known: Te_t, ne_t
-        Tu, nu, fc = x
-        Tt, nt = p.target.Te_t, p.target.ne_t
-    elseif mode === :upstream_known
-        # unknowns: [Tt, nt, fc]; known: Te_u, ne_u
-        Tt, nt, fc = x
-        Tu, nu = p.sol.Te_up, p.sol.ne_up
-    else
-        error("mode must be :target_known or :upstream_known")
-    end
-
-    # Fractions derived from Te_t via stored polynomial coefficients
-    fm = f_from_poly_Te(Tt, p.coupling.fmom_poly)
-
-    # R1: sheath vs available power mapping (units → [W/m] on both sides)
-    qt_sheath = q_parallel_at_target(Tt, nt, τt, mi)  # [W/m^2]
-    R1 = qt_sheath * Rt - (1 - fc) * qleg * Ru
-    R1 = R1 / qleg
-  
-    # R2: momentum/pressure balance with fmom(Te_t)
-    R2 = nt*Tt*(1+τt)*(1+Mt^2) - nu*Tu*(1+τu)*(1+Mu^2) * (1 - fm)
-    R2 = R2 / nt*Tt
-
-    # R3: Spitzer–Härm conduction integral with geometry and f_cond
-    R3 = Tu^(3.5) - Tt^(3.5) - (7/2) * (Rt/Ru) * (qleg * fcond * Lpar) / (ke * (1 - fc))
-    R3 = R3 / Tt^(3.5)
-
-    return (R1, R2, R3)
-end
-
-# =============== Post-processing (populate results similar to your original solver) ===============
+# =============== Post-processing (populate results) ===============
 function postprocess!(m::SLCoupledModel)
     p = m.parameters
     r = m.results
@@ -217,7 +160,8 @@ function postprocess!(m::SLCoupledModel)
     mi       = p.coupling.mi_amu
     Bp, Bt   = p.plasma.Bpol_omp, p.plasma.Bt_omp
     sθ       = sin_pitch(Bp, Bt)
-    qleg     = p.plasma.P_SOL / (2π * Ru * λq * sθ)
+    Psol_eff = p.plasma.P_SOL * p.plasma.f_psol 
+    qleg     = Psol_eff / (2π * Ru * λq * sθ)
 
     # Fractions at current Te_t
     #fc = f_from_poly_Te(p.target.Te_t, p.coupling.fcool_poly)
@@ -277,13 +221,11 @@ function postprocess!(m::SLCoupledModel)
 end
 
 # =============== Public solvers (optimization-only) ===============
-function run!(m::SLCoupledModel; mode::Symbol=:target_known,
-              x0=nothing, lb=nothing, ub=nothing, weights=(1.0,1.0,1.0),
-              kwargs...)
+function run!(m::SLCoupledModel; mode::Symbol=:target_known, x0=nothing, kwargs...)
     if mode === :target_known
-        solve_target_known!(m; x0=x0, lb=lb, ub=ub, weights=weights)
+        solve_target_known!(m; x0=x0)
     elseif mode === :upstream_known
-        solve_upstream_known!(m; x0=x0, lb=lb, ub=ub, weights=weights)
+        solve_upstream_known!(m; x0=x0)
     else
         error("Unsupported mode = $mode")
     end
@@ -294,100 +236,174 @@ function (m::SLCoupledModel)(; kwargs...)
     return run!(m; kwargs...)   
 end
 """
-    solve_target_known!(m; x0=nothing, lb=nothing, ub=nothing, weights=(1,1,1))
+    solve_target_known!(m; x0=nothing)
 
-Target known: P_SOL, Te_t, ne_t must be set in `m.parameters`.
-Solves for upstream (Te_up, ne_up) by minimizing the weighted sum of squared residuals.
+ Direct triangular solve (no optimizer):
+- R1 → compute `f_cool` from sheath vs. available power
+- R3 → compute upstream temperature `Te_up`
+- R2 → compute upstream density `ne_up`
+
+Inputs required in `m.parameters`: `P_SOL`, target `(Te_t, ne_t)`, geometry, and coupling constants.
 Writes the solution into `m.parameters` and updates `m.results` via `postprocess!`.
-Returns a named tuple with the optimizer output for diagnostics.
+Returns a small named tuple mimicking optimizer results for compatibility.
 """
-function solve_target_known!(m::SLCoupledModel; x0=nothing, lb=nothing, ub=nothing, weights=(1.0,1.0,1.0))
+function solve_target_known!(m::SLCoupledModel; x0=nothing)  
     p = m.parameters
+    ϵ = 1e-6
 
-    cost(x; do_print=false) = begin
-        #push!(tmp_in, x)
-        r = residuals_vec([x[1],x[2] * 1E20, x[3]]; mode=:target_known, m, do_print)
-        rw = r .* weights
-        c = sqrt(sum(rw.^2)) 
-        return c
-    end
+    # read constants/parameters
+    τt, τu = p.coupling.tau_t, p.coupling.tau_u
+    mi     = p.coupling.mi_amu
+    Ru, Rt = p.plasma.R_omp, p.target.R_strike
+    λq     = p.sol.λ_omp
+    Bp, Bt = p.plasma.Bpol_omp, p.plasma.Bt_omp
+    Lpar   = p.target.L_para
+    ke     = p.coupling.kappa_e
+    fcond  = p.coupling.f_cond
+    Mt, Mu = p.coupling.M_t, p.coupling.M_u
 
-    # Unknowns x = [Tu, nu, fc]
-    # density in units of 1E20
-    x0 === nothing && (x0 = [p.target.Te_t*5, p.target.ne_t/1E20/5, 0.9])
-    lb === nothing && (lb = [0.1, 1E-3, 1E-3])
-    ub === nothing && (ub = [1e4, 10.0, 1.0 - 1E-3])
+    # known target conditions
+    Tt, nt = p.target.Te_t, p.target.ne_t
 
-    #res = optimize(cost, lb, ub, x0, Fminbox(LBFGS()))
+    # q_leg
+    sθ   = max(sin_pitch(Bp, Bt), 1e-12)
+    Psol_eff = p.plasma.P_SOL * p.plasma.f_psol 
+    qleg = Psol_eff / (2π * Ru * λq * sθ)   # [W/m^2]
 
-    # rough initial guess of x0
-    factors = range(1.0, 20.0, 10)
-    costs = [cost([p.target.Te_t*factor, p.target.ne_t/1E20/factor, 0.9]) for factor in factors]
-    best_factor = factors[argmin(costs)]
+    # R1: f_cool
+    qt  = q_parallel_at_target(Tt, nt, τt, mi)    # [W/m^2]
+    fc  = 1 - (qt * Rt) / (qleg * Ru)
+    fc  = clamp(fc, ϵ, 1 - ϵ)
 
-    # run actual optimization
-    x0 = [p.target.Te_t*best_factor, p.target.ne_t/1E20/best_factor, 0.9]
-    res = optimize(cost, x0, Newton(); autodiff=:forward)
+    # R3: Te_up
+    Tu = (Tt^(3.5) + (7/2) * (Rt/Ru) * (qleg * fcond * Lpar) / (ke * (1 - fc)))^(2/7)
 
-    Tu, nu, fc = abs.(res.minimizer)
-    fc = IMAS.mirror_bound(fc, 0.0, 1.0)
+    # R2: ne_up
+    fm = f_from_poly_Te(Tt, p.coupling.fmom_poly)
+    nu = nt * Tt * (1 + τt) * (1 + Mt^2) / ( Tu * (1 + τu) * (1 + Mu^2) * (1 - fm) )
+
+    # write back & postprocess
     p.sol.Te_up = Tu
-    p.sol.ne_up = nu * 1E20
+    p.sol.ne_up = nu
     p.coupling.fcool_optim = fc
-
     postprocess!(m)
-    Tu, nu_s, fc = abs.(res.minimizer)         
-    println("Final minimizer: ", Float64.(abs.(res.minimizer)))
-    println("Final residuals: ",Float64.(residuals_vec([Tu, nu_s*1e20, fc]; mode=:target_known, m=m)))
-    println("Final cost: ", res.minimum)
-    return res
+
+    println("Direct solve (target_known) → Tu=$(Float64(Tu)), nu=$(Float64(nu)), fc=$(Float64(fc))") 
+
+    # return an optimizer-like result for compatibility
+    return (minimizer = [Tu, nu/1e20, fc], minimum = 0.0, converged = true)  
 end
 
-# """
-#     solve_upstream_known!(m; x0=nothing, lb=nothing, ub=nothing, weights=(1,1,1))
+"""
+    solve_upstream_known!(m; x0=nothing)
 
-# Upstream known: P_SOL, Te_up, ne_up must be set in `m.parameters`.
-# Solves for target (Te_t, ne_t) by minimizing the weighted sum of squared residuals.
-# Writes the solution into `m.parameters` and updates `m.results` via `postprocess!`.
-# Returns a named tuple with the optimizer output for diagnostics.
-# """
-function solve_upstream_known!(m::SLCoupledModel; x0=nothing, lb=nothing, ub=nothing, weights=(1.0,1.0,1.0))
+ Direct 1D solve (Brent) when upstream is known:
+- Use R2 to express `n_t(T_t)`
+- Use R1 to express `f_cool(T_t)`
+- Insert into R3 to define a scalar residual `g(T_t)` and minimize `g(T_t)^2` on [T_min, 0.99*Te_up]
+
+Inputs required in `m.parameters`: `P_SOL`, upstream `(Te_up, ne_up)`, geometry, and coupling constants.
+Writes the solution into `m.parameters` and updates `m.results` via `postprocess!`.
+Returns a small named tuple mimicking optimizer results for compatibility.
+"""
+function solve_upstream_known!(m::SLCoupledModel; x0=nothing)  
     p = m.parameters
+    ϵ = 1e-6
 
-    cost(x; do_print=false) = begin
-        r = residuals_vec([x[1], x[2] * 1E20, x[3]]; mode=:upstream_known, m, do_print)
-        rw = r .* weights
-        c = sqrt(sum(rw.^2)) 
-        return c
+    # constants/parameters
+    Tu, nu = p.sol.Te_up, p.sol.ne_up
+    τt, τu  = p.coupling.tau_t, p.coupling.tau_u
+    mi      = p.coupling.mi_amu
+    Ru, Rt  = p.plasma.R_omp, p.target.R_strike
+    λq      = p.sol.λ_omp
+    Bp, Bt  = p.plasma.Bpol_omp, p.plasma.Bt_omp
+    Lpar    = p.target.L_para
+    ke      = p.coupling.kappa_e
+    fcond   = p.coupling.f_cond
+    Mt, Mu  = p.coupling.M_t, p.coupling.M_u
+
+    sθ   = max(sin_pitch(Bp, Bt), 1e-12)
+    Psol_eff = p.plasma.P_SOL * p.plasma.f_psol 
+    qleg = Psol_eff / (2π * Ru * λq * sθ)
+
+    # R2 ⇒ n_t(T_t)
+    C = nu*Tu*(1+τu)*(1+Mu^2) / ((1+τt)*(1+Mt^2))
+    nt_of = Tt -> max( C * (1 - f_from_poly_Te(Tt, p.coupling.fmom_poly)) / max(Tt, ϵ), ϵ )
+
+    # R1 ⇒ f_cool(T_t)
+    qt_sheath = (Tt, nt) -> q_parallel_at_target(Tt, nt, τt, mi)
+    fc_of = function (Tt)
+        nt = nt_of(Tt)
+        fc = 1 - (qt_sheath(Tt, nt) * Rt) / (qleg * Ru)
+        return clamp(fc, ϵ, 1 - ϵ), nt
     end
 
-    # Unknowns x = [Tt, nt, fc]
-    x0 === nothing && (x0 = [p.sol.Te_up/5, p.sol.ne_up/1E20*5, 0.9])
-    lb === nothing && (lb = [0.1, 1E-3, 1E-3])
-    ub === nothing && (ub = [1e3, 10.0, 1.0 - 1E-3])
+    # R3 ⇒ g(T_t)=0 (minimize g^2)
+    g(Tt) = begin
+        fc, _ = fc_of(Tt)
+        Tu^(3.5) - Tt^(3.5) - (7/2) * (Rt/Ru) * (qleg * fcond * Lpar) / (ke * (1 - fc))
+    end
 
-    # rough initial guess of x0
-    factors = range(1.0, 20.0, 10)
-    costs = [cost([p.sol.Te_up*factor, p.sol.ne_up/1E20/factor, 0.9]) for factor in factors]
-    best_factor = factors[argmin(costs)]
+    function bracket_root(g, a, b; N::Int=200)
+        xs = range(a, b; length=N)
+        gprev = g(first(xs)); xprev = first(xs)
+        for x in Iterators.drop(xs, 1)
+            gx = g(x)
+            if isfinite(gprev) && isfinite(gx) && sign(gprev) != sign(gx)
+                return xprev, x
+            end
+            xprev = x; gprev = gx
+        end
+        return nothing
+    end
+    function bisect(g, a, b; tol=1e-8, maxit=100)
+        fa = g(a); fb = g(b)
+        if !(isfinite(fa) && isfinite(fb)) || fa*fb > 0
+            return nothing
+        end
+        lo, hi, flo, fhi = a, b, fa, fb
+        for _ in 1:maxit
+            mid = 0.5*(lo+hi)
+            fm  = g(mid)
+            if !isfinite(fm); return nothing; end
+            if abs(fm) < 1e-12 || (hi-lo) < tol
+                return mid
+            end
+            if flo*fm <= 0
+                hi, fhi = mid, fm
+            else
+                lo, flo = mid, fm
+            end
+        end
+        return 0.5*(lo+hi)
+    end
+    Tt_lo = 0.1
+    Tt_hi = 0.99*Tu
 
-    x0 = [p.sol.Te_up*best_factor, p.sol.ne_up/1E20/best_factor, 0.9]
-    res = optimize(cost, x0, Newton(); autodiff=:forward)
+    ab = bracket_root(g, Tt_lo, Tt_hi; N=300)
 
-    Tt, nt, fc = abs.(res.minimizer)
-    fc = IMAS.mirror_bound(fc, 0.0, 1.0)
-    p.target.Te_t = Tt
-    p.target.ne_t = nt * 1E20
-    p.coupling.fcool_optim = fc
+    Tt_star = if ab !== nothing
+        a, b = ab
+        bisect(g, a, b; tol=1e-8, maxit=120)
+    else
+        xs = collect(range(Tt_lo, Tt_hi; length=400))
+        vals = map(x->abs(g(x)), xs)
+        xs[argmin(vals)]
+    end
 
+    fc_star, nt_star = fc_of(Tt_star)
+
+    # write back & postprocess
+    p.target.Te_t = Tt_star
+    p.target.ne_t = nt_star
+    p.coupling.fcool_optim = fc_star
     postprocess!(m)
 
-    Tt, nt_s, fc = abs.(res.minimizer)
-    println("Final minimizer: ", Float64.(abs.(res.minimizer)))
-    println("Final residuals: ", Float64.(residuals_vec([Tt, nt_s*1e20, fc]; mode=:upstream_known, m=m)))
-    println("Final cost: ", res.minimum)
+    println("Direct solve (upstream_known) → Tt=$(Float64(Tt_star)), nt=$(Float64(nt_star)), fc=$(Float64(fc_star))")  
 
-    return res
+    return (minimizer = [Tt_star, nt_star/1e20, fc_star],
+            minimum   = abs(g(Tt_star)),
+            converged = (ab !== nothing))  
 end
 
 # =============== Summary printer ===============

@@ -36,7 +36,7 @@ function setup_model(
     p = model.parameters
 
     # plasma 
-    p.plasma.P_SOL     = IMAS.power_sol(cs, cp1d) / 2.0 * 0.8 # two strike points
+    p.plasma.P_SOL     = (IMAS.power_sol(cs, cp1d) / 2.0) # two strike points
     p.plasma.R_omp     = sol1.r[sol1.midplane_index]
     p.plasma.R_x      = eqt.boundary.x_point[1].r
     p.plasma.Ip        = eqt.global_quantities.ip

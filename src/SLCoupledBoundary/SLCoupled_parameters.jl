@@ -5,6 +5,7 @@ Base.@kwdef mutable struct SLCoupledPlasmaParameters{T<:Real} <: AbstractParamet
     _parent::WeakRef = WeakRef(nothing)
     _name::Symbol = :not_set
     P_SOL::Entry{T}   = Entry{T}("W", "Power coming through the separatrix")
+    f_psol::Entry{T}  = Entry{T}("-",  "Fraction of Psol"; default=1.0)
     R_omp::Entry{T}   = Entry{T}("m", "Outer midplane radius")
     R_x::Entry{T}     = Entry{T}("m", "X-point radius")
     Ip::Entry{T}      = Entry{T}("A", "Plasma current")
