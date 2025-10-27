@@ -288,8 +288,6 @@ function solve_target_known!(m::SLCoupledModel; x0=nothing)
     p.coupling.fcool_optim = fc
     postprocess!(m)
 
-    println("Direct solve (target_known) → Tu=$(Float64(Tu)), nu=$(Float64(nu)), fc=$(Float64(fc))") 
-
     # return an optimizer-like result for compatibility
     return (minimizer = [Tu, nu/1e20, fc], minimum = 0.0, converged = true)  
 end
@@ -398,8 +396,6 @@ function solve_upstream_known!(m::SLCoupledModel; x0=nothing)
     p.target.ne_t = nt_star
     p.coupling.fcool_optim = fc_star
     postprocess!(m)
-
-    println("Direct solve (upstream_known) → Tt=$(Float64(Tt_star)), nt=$(Float64(nt_star)), fc=$(Float64(fc_star))")  
 
     return (minimizer = [Tt_star, nt_star/1e20, fc_star],
             minimum   = abs(g(Tt_star)),
