@@ -14,6 +14,9 @@
 
 Set up parameters for the SLCoupledModel using target-side inputs.
 
+`strike_index` is the index of the strike point in the points of the `sol1` OpenFieldLine:
+`1` (its first point) or `length(sol1.r)` (its last point)
+
 Upstream (Te_up, ne_up) is solved later; here we only populate inputs/storage.
 """
 function setup_model(
@@ -54,21 +57,14 @@ function setup_model(
     p.radiation.species   = collect(impurities)
     p.radiation.fractions = collect(float.(impurities_fraction))
 
-    # target geometry
-    if sol1.r[1] < sol1.r[end]
-        index_inner = 1
-        index_outer = length(sol1.r)
-    else
-        index_inner = length(sol1.r)
-        index_outer = 1
-    end
-
-    p.target.f_omp2target_expansion = sol1.total_flux_expansion[index_outer]
-    p.target.R_strike = sol1.r[index_outer]
-    p.target.L_para   = sol1.s[index_outer]
+    # target geometry, at the strike point this model is set up for
+    @assert strike_index in (1, length(sol1.r)) "strike_index must be 1 or length(sol1.r)"
+    p.target.f_omp2target_expansion = sol1.total_flux_expansion[strike_index]
+    p.target.R_strike = sol1.r[strike_index]
+    p.target.L_para   = sol1.s[strike_index]
     p.target.f_spread_pfr = heat_spread_factor
-    p.target.α_sp = atan(sol1.Bp[index_outer] / sol1.Bt[index_outer])
-    p.target.θ_sp = sol1.strike_angles[index_outer == 1 ? 1 : 2]
+    p.target.α_sp = atan(sol1.Bp[strike_index] / sol1.Bt[strike_index])
+    p.target.θ_sp = sol1.strike_angles[strike_index == 1 ? 1 : 2]
 
     return model
 end
